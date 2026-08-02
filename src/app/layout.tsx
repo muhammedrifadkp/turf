@@ -8,6 +8,8 @@ import Sidebar from '@/components/layout/Sidebar';
 import MobileNavBar from '@/components/layout/MobileNavBar';
 import AuthGuard from '@/components/auth/AuthGuard';
 import NetworkMonitorModal from '@/components/network/NetworkMonitorModal';
+import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -15,10 +17,26 @@ export const metadata: Metadata = {
   title: 'TurfArena - Commercial Turf Management SaaS',
   description:
     'Mobile-first minimal sports turf management system for daily bookings, shift accounting, drinks POS, expenses & owner reports.',
+  applicationName: 'TurfArena',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TurfArena',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: '#059669',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -33,6 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-emerald-500 selection:text-white`}
       >
         <TurfProvider>
+          <ServiceWorkerRegister />
+          <PwaInstallPrompt />
           <NetworkMonitorModal />
           <ConfirmProvider>
             <AuthGuard>
@@ -53,3 +73,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+

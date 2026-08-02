@@ -2,19 +2,47 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TurfArena Management System',
+    name: 'TurfArena - Sports Turf Management',
     short_name: 'TurfArena',
-    description: 'Internal Sports Turf Management System PWA',
-    start_url: '/schedule',
+    description: 'Mobile-first sports turf management system for daily bookings, shift accounting, drinks POS, expenses & owner reports.',
+    start_url: '/',
+    id: '/',
     display: 'standalone',
+    orientation: 'any',
     background_color: '#0f172a',
-    theme_color: '#10b981',
+    theme_color: '#059669',
+    categories: ['sports', 'business', 'productivity'],
     icons: [
       {
-        src: '/favicon.ico',
-        sizes: 'any',
-        type: 'image/x-icon',
+        src: '/icons/icon-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icons/icon-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icons/icon-maskable-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+      {
+        src: '/icons/icon-maskable-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+      {
+        src: '/icons/apple-touch-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
       },
     ],
   };
 }
+
