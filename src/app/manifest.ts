@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TurfArena - Sports Turf Management',
-    short_name: 'TurfArena',
+    name: 'Orion Turf - Sports Turf Management',
+    short_name: 'Orion Turf',
     description: 'Mobile-first sports turf management system for daily bookings, shift accounting, drinks POS, expenses & owner reports.',
     start_url: '/',
     id: '/',

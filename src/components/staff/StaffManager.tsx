@@ -269,11 +269,14 @@ export default function StaffManager() {
 
       {/* Password Reset Modal */}
       {resetUserId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-50 animate-fade-in">
           <form
             onSubmit={handleResetPassword}
-            className="bg-white border border-slate-200 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-slate-900"
+            className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4 text-slate-900 animate-slide-up sm:animate-fade-in"
           >
+            {/* Mobile Drag Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-1 sm:hidden shrink-0" />
+
             <h3 className="text-base font-black text-slate-900 flex items-center space-x-2">
               <KeyRound className="w-4 h-4 text-emerald-600" />
               <span>Reset Staff Password</span>
@@ -284,21 +287,21 @@ export default function StaffManager() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter New Password"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold rounded-xl px-3.5 py-2.5 text-xs outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold rounded-xl px-3.5 py-2.5 text-sm outline-none"
               required
             />
 
-            <div className="flex items-center justify-end space-x-2">
+            <div className="flex items-center justify-end space-x-2 pt-1">
               <button
                 type="button"
                 onClick={() => setResetUserId(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase shadow-sm"
               >
                 Update Password
               </button>

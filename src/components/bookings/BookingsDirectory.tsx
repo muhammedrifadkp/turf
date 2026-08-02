@@ -207,131 +207,221 @@ export default function BookingsDirectory() {
         </div>
       </div>
 
-      {/* Bookings Directory Table */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+      {/* Bookings Directory (Responsive Mobile Cards + Desktop Table) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
         {filteredBookings.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">
             No bookings match your search criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                <tr>
-                  <th className="p-3 rounded-l-xl">Team / Customer</th>
-                  <th className="p-3">Court / Date</th>
-                  <th className="p-3">Time</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Financials</th>
-                  <th className="p-3 text-right rounded-r-xl">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3">
-                      <div className="font-black text-slate-900 text-sm">{b.team_name}</div>
-                      <div className="text-[11px] text-slate-500">
-                        👤 {b.customer_name} ({b.phone})
-                      </div>
-                      {b.reference_id && (
-                        <span className="text-[9px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-slate-100 mt-1 inline-block">
-                          Ref: {b.reference_id}
-                        </span>
-                      )}
-                    </td>
+          <>
+            {/* Mobile View Card List */}
+            <div className="grid grid-cols-1 gap-3.5 md:hidden">
+              {filteredBookings.map((b) => (
+                <div
+                  key={b.id}
+                  className="bg-slate-50/90 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs hover:border-emerald-300 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base leading-tight">
+                        {b.team_name}
+                      </h4>
+                      <p className="text-xs text-slate-600 font-semibold mt-0.5">
+                        👤 {b.customer_name}
+                      </p>
+                    </div>
+                    <div>{getStatusBadge(b.status)}</div>
+                  </div>
 
-                    <td className="p-3">
-                      <div className="font-bold text-slate-800 capitalize">
-                        {b.court_type.replace('_', ' ')}
-                      </div>
-                      <div className="text-[11px] text-slate-500">{formatNiceDate(b.play_date)}</div>
-                    </td>
-
-                    <td className="p-3">
-                      <div className="font-black text-emerald-700">
-                        {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
-                      </div>
-                      <div className="text-[10px] text-slate-400">{b.total_hours} hrs</div>
-                    </td>
-
-                    <td className="p-3">{getStatusBadge(b.status)}</td>
-
-                    <td className="p-3">
-                      <div className="font-black text-slate-900">{formatINR(b.final_amount)}</div>
-                      {b.outstanding_balance > 0 && b.status !== 'cancelled' && (
-                        <div className="text-[11px] font-bold text-rose-600">
-                          Due: {formatINR(b.outstanding_balance)}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end space-x-1.5">
-                        {/* Page-Based POS Details Button */}
-                        <Link
-                          href={`/bookings/${b.id}`}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] shadow-xs transition-colors flex items-center space-x-1"
-                        >
-                          <span>POS Page →</span>
-                        </Link>
-
-                        {/* Edit Button */}
-                        <button
-                          onClick={() => {
-                            setSelectedBookingForEdit(b);
-                            setIsBookingModalOpen(true);
-                          }}
-                          title="Edit Booking"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center space-x-1"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-slate-700" />
-                        </button>
-
-                        <button
-                          onClick={() => handleRepeatBooking(b)}
-                          title="Repeat Booking (One Tap)"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-                        </button>
-
-                        {b.status !== 'cancelled' && (
-                          <button
-                            onClick={() => setSelectedBookingForCancel(b)}
-                            title="Cancel Booking"
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-rose-600 transition-colors"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {role === 'owner' && (
-                          <button
-                            onClick={async () => {
-                              const approved = await confirm({
-                                title: 'Delete Booking Record',
-                                message: `Are you sure you want to delete the booking for "${b.team_name}" (${b.play_date})?`,
-                                confirmText: 'Delete Record',
-                                variant: 'danger',
-                              });
-                              if (approved) {
-                                softDeleteBooking(b.id);
-                              }
-                            }}
-                            title="Delete Booking (Owner)"
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-600 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/70 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="font-semibold text-slate-500">Court & Date:</span>
+                      <span className="font-bold text-slate-900 capitalize">
+                        {b.court_type.replace('_', ' ')} • {formatNiceDate(b.play_date)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="font-semibold text-slate-500">Time Slot:</span>
+                      <span className="font-black text-emerald-700">
+                        {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)} ({b.total_hours}h)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                      <span className="font-semibold text-slate-500">Total / Outstanding:</span>
+                      <div className="text-right">
+                        <span className="font-black text-slate-900">{formatINR(b.final_amount)}</span>
+                        {b.outstanding_balance > 0 && b.status !== 'cancelled' && (
+                          <span className="text-rose-600 font-black ml-2">
+                            (Due: {formatINR(b.outstanding_balance)})
+                          </span>
                         )}
                       </div>
-                    </td>
+                    </div>
+                  </div>
+
+                  {/* Mobile Touch Action Buttons */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase shadow-xs transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>POS Details →</span>
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setSelectedBookingForEdit(b);
+                        setIsBookingModalOpen(true);
+                      }}
+                      className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition-colors shrink-0"
+                      title="Edit Booking"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={() => handleRepeatBooking(b)}
+                      className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-xs font-bold transition-colors shrink-0"
+                      title="Repeat Booking"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+
+                    {b.status !== 'cancelled' && (
+                      <button
+                        onClick={() => setSelectedBookingForCancel(b)}
+                        className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-xs font-bold transition-colors shrink-0"
+                        title="Cancel Booking"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-3 rounded-l-xl">Team / Customer</th>
+                    <th className="p-3">Court / Date</th>
+                    <th className="p-3">Time</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Financials</th>
+                    <th className="p-3 text-right rounded-r-xl">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredBookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3">
+                        <div className="font-black text-slate-900 text-sm">{b.team_name}</div>
+                        <div className="text-[11px] text-slate-500">
+                          👤 {b.customer_name} ({b.phone})
+                        </div>
+                        {b.reference_id && (
+                          <span className="text-[9px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-slate-100 mt-1 inline-block">
+                            Ref: {b.reference_id}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-3">
+                        <div className="font-bold text-slate-800 capitalize">
+                          {b.court_type.replace('_', ' ')}
+                        </div>
+                        <div className="text-[11px] text-slate-500">{formatNiceDate(b.play_date)}</div>
+                      </td>
+
+                      <td className="p-3">
+                        <div className="font-black text-emerald-700">
+                          {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">{b.total_hours} hrs</div>
+                      </td>
+
+                      <td className="p-3">{getStatusBadge(b.status)}</td>
+
+                      <td className="p-3">
+                        <div className="font-black text-slate-900">{formatINR(b.final_amount)}</div>
+                        {b.outstanding_balance > 0 && b.status !== 'cancelled' && (
+                          <div className="text-[11px] font-bold text-rose-600">
+                            Due: {formatINR(b.outstanding_balance)}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end space-x-1.5">
+                          {/* Page-Based POS Details Button */}
+                          <Link
+                            href={`/bookings/${b.id}`}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] shadow-xs transition-colors flex items-center space-x-1"
+                          >
+                            <span>POS Page →</span>
+                          </Link>
+
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedBookingForEdit(b);
+                              setIsBookingModalOpen(true);
+                            }}
+                            title="Edit Booking"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center space-x-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-slate-700" />
+                          </button>
+
+                          <button
+                            onClick={() => handleRepeatBooking(b)}
+                            title="Repeat Booking (One Tap)"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                          </button>
+
+                          {b.status !== 'cancelled' && (
+                            <button
+                              onClick={() => setSelectedBookingForCancel(b)}
+                              title="Cancel Booking"
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-rose-600 transition-colors"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {role === 'owner' && (
+                            <button
+                              onClick={async () => {
+                                const approved = await confirm({
+                                  title: 'Delete Booking Record',
+                                  message: `Are you sure you want to delete the booking for "${b.team_name}" (${b.play_date})?`,
+                                  confirmText: 'Delete Record',
+                                  variant: 'danger',
+                                });
+                                if (approved) {
+                                  softDeleteBooking(b.id);
+                                }
+                              }}
+                              title="Delete Booking (Owner)"
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-600 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

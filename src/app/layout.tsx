@@ -14,15 +14,15 @@ import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'TurfArena - Commercial Turf Management SaaS',
+  title: 'Orion Turf - Commercial Turf Management SaaS',
   description:
     'Mobile-first minimal sports turf management system for daily bookings, shift accounting, drinks POS, expenses & owner reports.',
-  applicationName: 'TurfArena',
+  applicationName: 'Orion Turf',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'TurfArena',
+    title: 'Orion Turf',
   },
   icons: {
     icon: [
@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Sidebar />
                 <Header />
                 <div className="lg:pl-64 flex-1 flex flex-col w-full">
-                  <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                  <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 lg:pb-8">
                     {children}
                   </main>
                 </div>

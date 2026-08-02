@@ -108,7 +108,7 @@ export default function PwaInstallPrompt() {
                 ⚽
               </div>
               <div>
-                <h4 className="font-bold text-sm text-white leading-tight">Install TurfArena App</h4>
+                <h4 className="font-bold text-sm text-white leading-tight">Install Orion Turf App</h4>
                 <p className="text-xs text-slate-300">
                   Launch directly from your home screen like a native app.
                 </p>

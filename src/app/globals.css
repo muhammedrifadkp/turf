@@ -6,6 +6,14 @@
   .animate-fade-in {
     animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  .animate-slide-up {
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
 }
 
 @keyframes fadeIn {
@@ -16,6 +24,29 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Touch screen & mobile tap optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure inputs on mobile forms do not auto-zoom on iOS Safari */
+@media screen and (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
 
@@ -49,4 +80,5 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
 

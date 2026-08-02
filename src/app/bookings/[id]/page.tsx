@@ -2,7 +2,7 @@ import React from 'react';
 import BookingDetailsPOS from '@/components/bookings/BookingDetailsPOS';
 
 export const metadata = {
-  title: 'Booking Details POS | Turf Management SaaS',
+  title: 'Booking Details POS | Orion Turf',
   description: 'Dedicated page-based booking POS workflow for payments, timeline, drinks, and live calculations.',
 };
 

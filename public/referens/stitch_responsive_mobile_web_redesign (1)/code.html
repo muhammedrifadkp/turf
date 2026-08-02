@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TurfArena - Shift Accounting Engine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#bccac2",
+                        "surface-container-low": "#f3f3f6",
+                        "secondary-fixed": "#ffdad8",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "primary-fixed-dim": "#5bdcb0",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#92001c",
+                        "on-error": "#ffffff",
+                        "primary": "#006c51",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#6f5d00",
+                        "tertiary-container": "#c8a900",
+                        "on-primary-container": "#003224",
+                        "surface-tint": "#006c51",
+                        "on-primary-fixed": "#002116",
+                        "tertiary-fixed-dim": "#e8c404",
+                        "inverse-surface": "#2f3133",
+                        "secondary-container": "#db313f",
+                        "on-background": "#1a1c1e",
+                        "inverse-on-surface": "#f0f0f3",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e2e2e5",
+                        "surface-container": "#eeeef0",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#ffe16a",
+                        "secondary-fixed-dim": "#ffb3b1",
+                        "on-tertiary-container": "#4b3e00",
+                        "surface-dim": "#dadadc",
+                        "on-secondary-fixed": "#410007",
+                        "background": "#f9f9fc",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e8e8ea",
+                        "on-surface-variant": "#3d4a43",
+                        "on-surface": "#1a1c1e",
+                        "surface": "#f9f9fc",
+                        "primary-container": "#00a67e",
+                        "on-primary-fixed-variant": "#00513c",
+                        "on-primary": "#ffffff",
+                        "secondary": "#b7102a",
+                        "outline": "#6d7a73",
+                        "inverse-primary": "#5bdcb0",
+                        "on-secondary-container": "#fffbff",
+                        "on-tertiary-fixed": "#221b00",
+                        "surface-variant": "#e2e2e5",
+                        "primary-fixed": "#7af9cc",
+                        "surface-bright": "#f9f9fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "24px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "container-margin": "16px",
+                        "lg": "24px",
+                        "xs": "8px",
+                        "card-gap": "12px"
+                    },
+                    "fontFamily": {
+                        "price-display": ["Hanken Grotesk"],
+                        "headline-xl": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "label-sm": ["Hanken Grotesk"],
+                        "title-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "price-display": ["22px", {"lineHeight": "28px", "fontWeight": "800"}],
+                        "headline-xl": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "title-md": ["16px", {"lineHeight": "20px", "fontWeight": "700"}],
+                        "headline-lg": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["18px", {"lineHeight": "24px", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f9f9fc;
+            font-family: 'Hanken Grotesk', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-shadow-soft {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-4 w-full bg-surface border-b border-outline-variant sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary font-headline-lg-mobile text-headline-lg-mobile" data-icon="sports_soccer">sports_soccer</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-extrabold text-primary">TurfArena</span>
+</div>
+<div class="bg-primary text-on-primary rounded-full px-4 py-1 flex items-center gap-1 font-label-md text-label-md hover:opacity-90 active:scale-95 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+            ACTIVE SHIFT
+        </div>
+</header>
+<main class="p-container-margin pb-32 max-w-md mx-auto flex flex-col gap-section-gap">
+<!-- Shift Accounting Engine Header Card -->
+<section class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl custom-shadow-soft flex flex-col gap-md">
+<div class="flex items-start gap-md">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-fixed text-2xl" data-icon="timer">timer</span>
+</div>
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Shift Accounting Engine</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Shift-bound financial auditing &amp; irreversible shift locking</p>
+</div>
+</div>
+<div class="bg-[#e8f5f0] border border-primary-container rounded-full px-4 py-2 flex items-center gap-2 w-fit">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-label-md text-label-md text-on-primary-fixed-variant">ACTIVE SHIFT (admin)</span>
+</div>
+</section>
+<!-- Meta Data -->
+<section class="grid grid-cols-2 gap-card-gap">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant">SHIFT STARTED AT</span>
+<span class="font-title-md text-title-md">8/1/2026, 12:10:11 AM</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-md text-label-md text-on-surface-variant">OPENING CASH</span>
+<span class="font-price-display text-price-display text-primary">₹0</span>
+</div>
+</section>
+<!-- Quick Stats Grid -->
+<section class="grid grid-cols-2 gap-card-gap">
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl">
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">FOOTBALL REV</span>
+<span class="font-price-display text-price-display text-primary">₹8,740</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl">
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">BADMINTON REV</span>
+<span class="font-price-display text-price-display text-on-surface">₹0</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl">
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">DRINK REV</span>
+<span class="font-price-display text-price-display text-tertiary-container">₹272</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-sm rounded-xl">
+<span class="font-label-md text-label-md text-on-surface-variant block mb-1">EXPENSES</span>
+<span class="font-price-display text-price-display text-secondary">₹0</span>
+</div>
+</section>
+<!-- Cash in Drawer Card -->
+<section class="bg-surface-container-lowest border-2 border-primary-container p-md rounded-xl relative overflow-hidden">
+<div class="flex justify-between items-start mb-md">
+<div>
+<div class="flex items-center gap-1 font-title-md text-title-md text-on-primary-container">
+<span class="material-symbols-outlined text-lg" data-icon="payments">payments</span>
+                        CASH IN DRAWER (COUNTER)
+                    </div>
+<div class="font-price-display text-[32px] leading-tight text-primary mt-1">₹2,100</div>
+</div>
+<button class="bg-primary-fixed text-on-primary-fixed font-label-md text-label-md px-3 py-1.5 rounded-lg hover:opacity-90 active:scale-95 transition-transform">
+                    HANDOVER CASH
+                </button>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-outline-variant">
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">Opening Cash:</span>
+<span class="font-bold">+₹0</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">Cash Collections (Bookings + Drinks):</span>
+<span class="font-bold text-primary">+₹2,100</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">Cash Expenses Paid Out:</span>
+<span class="font-bold text-secondary">-₹0</span>
+</div>
+</div>
+</section>
+<!-- GPay / UPI Card -->
+<section class="bg-surface-container-lowest border-2 border-primary-fixed-dim p-md rounded-xl">
+<div class="flex justify-between items-start mb-md">
+<div>
+<div class="flex items-center gap-1 font-title-md text-title-md text-on-surface">
+<span class="material-symbols-outlined text-lg text-primary" data-icon="account_balance_wallet">account_balance_wallet</span>
+                        TOTAL GPAY / UPI RECEIVED
+                    </div>
+<div class="font-price-display text-[32px] leading-tight text-on-primary-fixed-variant mt-1">₹1,194</div>
+</div>
+<button class="bg-primary-fixed-dim/20 text-on-primary-fixed-variant font-label-md text-label-md px-3 py-1.5 rounded-lg border border-primary-fixed-dim">
+                    BANK DIRECT
+                </button>
+</div>
+<div class="space-y-1.5 pt-2 border-t border-outline-variant">
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">GPay Bookings:</span>
+<span class="font-bold">₹1,080</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">GPay Drinks:</span>
+<span class="font-bold text-primary">+₹114</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant">GPay Expenses:</span>
+<span class="font-bold text-secondary">-₹0</span>
+</div>
+</div>
+</section>
+<!-- Total Combined Revenue Card -->
+<section class="bg-on-background p-md rounded-xl text-white">
+<div class="flex justify-between items-start mb-md">
+<div>
+<div class="flex items-center gap-1 font-label-md text-label-md text-outline-variant">
+<span class="material-symbols-outlined text-lg" data-icon="bar_chart">bar_chart</span>
+                        TOTAL COMBINED SHIFT REVENUE
+                    </div>
+<div class="font-price-display text-[36px] leading-tight text-primary-fixed mt-1">₹3,294</div>
+</div>
+<div class="bg-on-surface-variant/30 px-3 py-1.5 rounded-lg text-center">
+<span class="font-label-sm text-label-sm block opacity-70">GROSS</span>
+<span class="font-label-md text-label-md block">REVENUE</span>
+</div>
+</div>
+<div class="space-y-2 pt-2 border-t border-on-surface-variant/30">
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-outline-variant">Cash Portion:</span>
+<span class="font-bold text-primary-fixed-dim">₹2,100</span>
+</div>
+<div class="flex justify-between font-body-md text-body-md">
+<span class="text-outline-variant">GPay Portion:</span>
+<span class="font-bold text-primary-fixed-dim">₹1,194</span>
+</div>
+</div>
+</section>
+<!-- Audit Notes -->
+<section class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col gap-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="lock_open">lock_open</span>
+<h2 class="font-title-md text-title-md">Shift Closing &amp; Audit Notes</h2>
+</div>
+<textarea class="w-full h-32 rounded-lg border border-outline-variant bg-background p-md font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:opacity-50" placeholder="Enter closing remarks, handover notes or counter discrepancy explanation..."></textarea>
+<button class="w-full bg-tertiary-container text-white h-14 rounded-xl flex items-center justify-center gap-3 font-title-md text-title-md shadow-lg shadow-tertiary-container/20 hover:opacity-90 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+                END SHIFT &amp; LOCK ACCOUNTING
+            </button>
+</section>
+<!-- Shift History Audit Log -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="p-md border-b border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="assignment">assignment</span>
+<h2 class="font-title-md text-title-md">Shift History Audit Log</h2>
+</div>
+<div class="overflow-x-auto no-scrollbar">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low">
+<tr>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant">STAFF</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant">START TIME</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant">END TIME</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant text-right">OPENING</th>
+<th class="px-md py-3 font-label-md text-label-md text-on-surface-variant text-center">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr>
+<td class="px-md py-4 font-body-md text-body-md font-bold">admin</td>
+<td class="px-md py-4 font-body-md text-body-md text-on-surface-variant">Aug 1, 12:10 AM</td>
+<td class="px-md py-4 font-body-md text-body-md italic text-on-surface-variant opacity-60">Active</td>
+<td class="px-md py-4 font-body-md text-body-md text-primary font-bold text-right">₹0</td>
+<td class="px-md py-4 text-center">
+<span class="bg-primary-container/20 text-on-primary-container px-2 py-1 rounded-full font-label-sm text-label-sm uppercase">Active</span>
+</td>
+</tr>
+<tr class="opacity-70">
+<td class="px-md py-4 font-body-md text-body-md font-bold">manager_1</td>
+<td class="px-md py-4 font-body-md text-body-md text-on-surface-variant">Jul 31, 04:00 PM</td>
+<td class="px-md py-4 font-body-md text-body-md text-on-surface-variant">11:55 PM</td>
+<td class="px-md py-4 font-body-md text-body-md text-primary font-bold text-right">₹500</td>
+<td class="px-md py-4 text-center">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-1 rounded-full font-label-sm text-label-sm uppercase">Locked</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-2 bg-surface border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="local_bar">local_bar</span>
+<span class="font-label-md text-label-md">Drinks POS</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-transform active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-label-md text-label-md">Active Shift</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Expenses</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-md text-label-md">More</span>
+</a>
+</nav>
+<script>
+        // Simple interactivity for micro-interactions
+        document.querySelectorAll('button, a').forEach(elem => {
+            elem.addEventListener('touchstart', () => {
+                elem.classList.add('scale-95');
+            });
+            elem.addEventListener('touchend', () => {
+                elem.classList.remove('scale-95');
+            });
+        });
+
+        // Dynamic background shimmer effect for the main container
+        const main = document.querySelector('main');
+        main.addEventListener('scroll', () => {
+            const scrollPos = main.scrollTop;
+            // You could add logic here for sticky headers or other effects
+        });
+    </script>
+</body></html>

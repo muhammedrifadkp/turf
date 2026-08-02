@@ -1,7 +1,7 @@
-// TurfArena PWA Service Worker (Online-Only)
+// Orion Turf PWA Service Worker (Online-Only)
 // Configured to fulfill PWA installation criteria while executing direct network pass-throughs.
 
-const CACHE_NAME = 'turfarena-v1';
+const CACHE_NAME = 'orion-turf-v1';
 
 self.addEventListener('install', (event) => {
   // Activate immediately upon installation

@@ -147,8 +147,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
       {/* Confirmation & Alert Modal Popup Overlay */}
       {modalState.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden text-slate-900 transform transition-all animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden text-slate-900 transform transition-all animate-slide-up sm:animate-fade-in">
+            {/* Mobile Drag Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
             {/* Top Close Button */}
             <button
               onClick={() => handleClose(false)}

@@ -52,13 +52,11 @@ export default function Sidebar() {
     role === 'staff'
       ? [
           { href: '/drinks', label: 'Drinks POS & Counter', icon: Coffee },
-          { href: '/expenses', label: 'Expense Tracker', icon: DollarSign },
           { href: '/shift', label: 'Active Shift & Cash', icon: Zap },
         ]
       : [
           { href: '/schedule', label: 'Schedule Timeline', icon: Calendar },
           { href: '/bookings', label: 'Bookings Directory', icon: Clock },
-          { href: '/expenses', label: 'Expense Tracker', icon: DollarSign },
           { href: '/staff', label: 'Staff Assignment', icon: UserPlus },
           { href: '/settings', label: 'Facility Settings', icon: Settings },
         ];
@@ -76,7 +74,7 @@ export default function Sidebar() {
             </div>
             <div className="overflow-hidden">
               <span className="font-black text-base tracking-tight text-slate-900 block leading-tight truncate">
-                {settings.facility_name.split(' ')[0]} <span className="text-emerald-600">Turf</span>
+                {settings.facility_name.split(' ')[0]} <span className="text-emerald-600">{settings.facility_name.split(' ')[1] || 'Turf'}</span>
               </span>
               <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">
                 {role === 'staff' ? 'Duty Staff Counter' : 'Owner Admin SaaS'}

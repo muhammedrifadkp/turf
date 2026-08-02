@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- 2. Settings Table
 CREATE TABLE IF NOT EXISTS public.settings (
   id INT PRIMARY KEY DEFAULT 1,
-  facility_name TEXT NOT NULL DEFAULT 'TurfArena Sports Complex',
+  facility_name TEXT NOT NULL DEFAULT 'Orion Turf',
   phone TEXT DEFAULT '+91 98765 43210',
   address TEXT DEFAULT 'Kochi Sports Hub, Kerala',
   football_morning_rate NUMERIC DEFAULT 600,

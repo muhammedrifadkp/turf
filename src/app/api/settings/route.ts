@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const settingsData = {
       id: 1,
-      facility_name: body.facility_name || 'TurfArena Sports Complex',
+      facility_name: body.facility_name || 'Orion Turf',
       phone: body.phone || '+91 98765 43210',
       address: body.address || 'Kochi Sports Hub, Kerala',
       football_morning_rate: Number(body.football_morning_rate) || 600,

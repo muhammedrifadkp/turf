@@ -1,7 +1,7 @@
 import { DrinkItem, DrinkType, Settings, UserProfile } from '@/types';
 
 export const DEFAULT_SETTINGS: Settings = {
-  facility_name: 'TurfArena Sports Complex',
+  facility_name: 'Orion Turf',
   phone: '+91 98765 43210',
   address: 'Kochi Sports Hub, Main Road, Kerala',
   football_morning_rate: 600,

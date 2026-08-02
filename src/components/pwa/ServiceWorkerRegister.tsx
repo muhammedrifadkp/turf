@@ -9,10 +9,10 @@ export default function ServiceWorkerRegister() {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
-            console.log('TurfArena PWA ServiceWorker registered with scope:', registration.scope);
+            console.log('Orion Turf PWA ServiceWorker registered with scope:', registration.scope);
           })
           .catch((error) => {
-            console.error('TurfArena PWA ServiceWorker registration failed:', error);
+            console.error('Orion Turf PWA ServiceWorker registration failed:', error);
           });
       });
     }

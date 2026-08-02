@@ -37,10 +37,13 @@ export default function PaymentModal({ isOpen, onClose, booking }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-900 animate-slide-up sm:animate-fade-in">
+        {/* Mobile Drag Handle */}
+        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2 sm:hidden shrink-0" />
+
         {/* Sticky Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div className="px-6 py-3.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
           <div className="flex items-center space-x-2">
             <div className="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 font-bold">
               💰

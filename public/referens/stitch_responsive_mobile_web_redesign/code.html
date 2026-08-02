@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TurfArenaTurf POS Dashboard</title>
+<!-- Google Fonts: Hanken Grotesk -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e2e2e5",
+                        "tertiary": "#6f5d00",
+                        "secondary-container": "#db313f",
+                        "outline-variant": "#bccac2",
+                        "on-surface": "#1a1c1e",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#221b00",
+                        "primary-fixed": "#7af9cc",
+                        "on-primary-container": "#003224",
+                        "secondary-fixed": "#ffdad8",
+                        "on-error": "#ffffff",
+                        "primary": "#006c51",
+                        "inverse-surface": "#2f3133",
+                        "tertiary-fixed": "#ffe16a",
+                        "background": "#f9f9fc",
+                        "surface-bright": "#f9f9fc",
+                        "surface-dim": "#dadadc",
+                        "surface-tint": "#006c51",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#410007",
+                        "on-tertiary-container": "#4b3e00",
+                        "surface-container-highest": "#e2e2e5",
+                        "surface-container": "#eeeef0",
+                        "error": "#ba1a1a",
+                        "primary-container": "#00a67e",
+                        "inverse-on-surface": "#f0f0f3",
+                        "on-background": "#1a1c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#002116",
+                        "on-secondary-container": "#fffbff",
+                        "on-secondary-fixed-variant": "#92001c",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#3d4a43",
+                        "secondary": "#b7102a",
+                        "surface-container-high": "#e8e8ea",
+                        "surface-container-low": "#f3f3f6",
+                        "secondary-fixed-dim": "#ffb3b1",
+                        "primary-fixed-dim": "#5bdcb0",
+                        "outline": "#6d7a73",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "tertiary-container": "#c8a900",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#e8c404",
+                        "on-primary-fixed-variant": "#00513c",
+                        "surface": "#f9f9fc",
+                        "inverse-primary": "#5bdcb0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "card-gap": "12px",
+                        "xl": "32px",
+                        "section-gap": "24px",
+                        "xs": "8px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "container-margin": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "title-md": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "headline-xl": ["Hanken Grotesk"],
+                        "price-display": ["Hanken Grotesk"],
+                        "label-sm": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["18px", {"lineHeight": "24px", "fontWeight": "700"}],
+                        "title-md": ["16px", {"lineHeight": "20px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "price-display": ["22px", {"lineHeight": "28px", "fontWeight": "800"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "headline-lg": ["20px", {"lineHeight": "28px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Hanken Grotesk', sans-serif;
+            background-color: #f9f9fc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for desktop */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #006c51; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-on-surface antialiased pb-20 pt-16">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-low flex justify-between items-center px-container-margin py-xs w-full h-16 fixed top-0 left-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="w-8 h-8 object-contain" data-alt="A professional sports management logo featuring a stylized football and digital signal waves, set against a vibrant turf green circle. The design is clean, high-contrast, and modern, using the primary brand color #006c51 and white." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzy4jKTkPtxXfWZfIfV3BOaoPkhEn0qw7vOPI_cvLHTahlLm72AFu7GzKbUqurHtzwZ__T9z8uN-mZ-ZShHp4aCqguSLYF4toM2EK14pe-5Ch60ASPMTShgX1-XdggruKb3SFnFEBzI61L4UmSy5Mk_-4qkGX_IYMnbdtGAyMqIN3bbQlAtckgJQCbqvW9eUS454RX-215WyaLqbokA14SuMKs7RLeosdXwYTOppoxNUttOm-3sP4n3g"/>
+</div>
+<span class="text-headline-lg-mobile font-headline-lg-mobile font-black text-primary dark:text-primary-fixed">TurfArenaTurf</span>
+</div>
+<div class="flex items-center gap-2 bg-primary-container text-on-primary rounded-full px-3 py-1 font-bold text-label-md active:scale-95 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>ACTIVE SHIFT</span>
+</div>
+</header>
+<main class="px-container-margin py-md space-y-section-gap">
+<!-- Summary Dashboard Card -->
+<section class="bg-surface-container-lowest rounded-xl p-md border border-surface-variant/50 shadow-sm">
+<div class="flex items-start justify-between mb-md">
+<div class="flex gap-md">
+<div class="w-12 h-12 bg-primary-fixed-dim/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">local_bar</span>
+</div>
+<div>
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface">Duty Staff Counter &amp; POS</h1>
+<p class="text-body-md font-body-md text-outline">Collect team dues &amp; manage shift cash accounting</p>
+</div>
+</div>
+</div>
+<div class="flex gap-md items-center">
+<button class="flex-1 bg-secondary hover:bg-secondary/90 text-on-secondary h-12 rounded-xl flex items-center justify-center gap-2 font-title-md transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">add</span>
+<span>ADD EXPENSE</span>
+</button>
+<div class="bg-surface-container-low p-3 rounded-xl border border-surface-variant flex flex-col items-end min-w-[120px]">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Shift Revenue</span>
+<span class="text-price-display font-price-display text-primary">₹166</span>
+</div>
+</div>
+</section>
+<!-- Today's Pending Dues Section -->
+<section class="space-y-md">
+<div class="flex items-center justify-between px-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">payments</span>
+<h2 class="text-headline-lg font-headline-lg">Today's Pending Dues</h2>
+</div>
+<span class="text-label-md font-label-md text-outline">7 Pending</span>
+</div>
+<div class="space-y-card-gap">
+<!-- Pending Card 1 -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div class="space-y-0.5">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-tight">TEAM NAME</span>
+<h3 class="text-title-md font-title-md text-on-surface">Sinan Kamicheri</h3>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-lg text-label-md font-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                            4:00 PM - 5:00 PM
+                        </div>
+</div>
+<div class="flex items-center gap-2 mb-md text-outline">
+<span class="material-symbols-outlined text-[18px]">person</span>
+<span class="text-body-md font-body-md">sinan kamicheri • (9495394412)</span>
+</div>
+<div class="flex items-center justify-between border-t border-dashed border-surface-variant pt-md mb-md">
+<span class="text-body-md font-body-md text-outline">Outstanding:</span>
+<span class="text-title-md font-title-md text-secondary">Due Balance: ₹600</span>
+</div>
+<button class="w-full bg-primary-container text-on-primary h-12 rounded-xl flex items-center justify-center gap-2 font-title-md transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span>OPEN BOOKING POS PAGE (₹600)</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Pending Card 2 -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div class="space-y-0.5">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-tight">TEAM NAME</span>
+<h3 class="text-title-md font-title-md text-on-surface">Muhammed Valliyadu</h3>
+</div>
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-lg text-label-md font-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                            6:00 PM - 7:00 PM
+                        </div>
+</div>
+<div class="flex items-center gap-2 mb-md text-outline">
+<span class="material-symbols-outlined text-[18px]">person</span>
+<span class="text-body-md font-body-md">m. valliyadu • (9947177417)</span>
+</div>
+<div class="flex items-center justify-between border-t border-dashed border-surface-variant pt-md mb-md">
+<span class="text-body-md font-body-md text-outline">Outstanding:</span>
+<span class="text-title-md font-title-md text-secondary">Due Balance: ₹600</span>
+</div>
+<button class="w-full bg-primary-container text-on-primary h-12 rounded-xl flex items-center justify-center gap-2 font-title-md transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span>OPEN BOOKING POS PAGE (₹600)</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Today's Finished Section -->
+<section class="space-y-md">
+<div class="flex items-center justify-between px-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<h2 class="text-headline-lg font-headline-lg">Finished / Paid Bookings</h2>
+</div>
+<span class="text-label-md font-label-md text-outline">5 Completed</span>
+</div>
+<div class="space-y-card-gap">
+<!-- Paid Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div class="space-y-0.5">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-tight">TEAM NAME</span>
+<h3 class="text-title-md font-title-md text-on-surface">Team Kakkatt</h3>
+</div>
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-lg text-label-md font-label-md flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                            PAID IN FULL
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-2 mb-md text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-body-md font-body-md">11:00 AM (1h)</span>
+</div>
+<div class="flex items-center gap-2 justify-end">
+<span class="text-body-md font-body-md font-bold text-primary-container">Total: ₹600</span>
+</div>
+</div>
+<button class="w-full bg-on-surface text-surface-container-lowest h-10 rounded-xl flex items-center justify-center gap-2 font-title-md transition-all active:scale-[0.98]">
+<span>OPEN POS DETAILS</span>
+<span class="material-symbols-outlined">arrow_right_alt</span>
+</button>
+</div>
+<!-- Paid Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div class="space-y-0.5">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-tight">TEAM NAME</span>
+<h3 class="text-title-md font-title-md text-on-surface">Nafi Nappu</h3>
+</div>
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-lg text-label-md font-label-md flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                            PAID IN FULL
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-2 mb-md text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="text-body-md font-body-md">3:00 PM (1h)</span>
+</div>
+<div class="flex items-center gap-2 justify-end">
+<span class="text-body-md font-body-md font-bold text-primary-container">Total: ₹540</span>
+</div>
+</div>
+<button class="w-full bg-on-surface text-surface-container-lowest h-10 rounded-xl flex items-center justify-center gap-2 font-title-md transition-all active:scale-[0.98]">
+<span>OPEN POS DETAILS</span>
+<span class="material-symbols-outlined">arrow_right_alt</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-16 z-50 flex justify-around items-center px-2 bg-surface-container-lowest dark:bg-surface-container-low shadow-lg border-t border-surface-variant dark:border-outline-variant">
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed bg-primary-container/10 rounded-xl px-4 py-2 transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_bar</span>
+<span class="text-label-sm font-label-sm mt-0.5">Drinks POS</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline dark:text-outline-variant px-4 py-2 hover:text-primary dark:hover:text-primary-fixed transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">bolt</span>
+<span class="text-label-sm font-label-sm mt-0.5">Active Shift</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline dark:text-outline-variant px-4 py-2 hover:text-primary dark:hover:text-primary-fixed transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-label-sm font-label-sm mt-0.5">Expenses</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline dark:text-outline-variant px-4 py-2 hover:text-primary dark:hover:text-primary-fixed transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="text-label-sm font-label-sm mt-0.5">More</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Potential vibration or ripple effect for mobile
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+    </script>
+</body></html>

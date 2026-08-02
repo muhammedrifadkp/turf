@@ -100,52 +100,109 @@ export default function CustomerCRM() {
         </div>
       </div>
 
-      {/* Customer Directory Table */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+      {/* Customer Directory List / Table */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
         {filteredCustomers.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">No customer profiles found.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                <tr>
-                  <th className="p-3 rounded-l-xl">Customer Name</th>
-                  <th className="p-3">Team / Phone</th>
-                  <th className="p-3">Total Visits</th>
-                  <th className="p-3">Last Played</th>
-                  <th className="p-3">Avg Spend</th>
-                  <th className="p-3 text-right">Lifetime Spend</th>
-                  <th className="p-3 text-right rounded-r-xl">Outstanding</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredCustomers.map((c) => (
-                  <tr key={c.phone} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 font-black text-slate-900 text-sm">{c.name}</td>
-                    <td className="p-3 text-slate-600">
-                      <div className="font-bold">{c.team_name}</div>
-                      <div className="text-[11px] text-slate-400">{c.phone}</div>
-                    </td>
-                    <td className="p-3 font-bold text-amber-700">{c.total_visits} Visits</td>
-                    <td className="p-3 text-slate-500">{formatNiceDate(c.last_played)}</td>
-                    <td className="p-3 text-slate-700">{formatINR(c.avg_spend_per_visit)}</td>
-                    <td className="p-3 text-right font-black text-emerald-700">
-                      {formatINR(c.total_spent)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {c.outstanding_amount > 0 ? (
-                        <span className="font-black text-rose-600 text-sm">
-                          {formatINR(c.outstanding_amount)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-xs">Clear</span>
-                      )}
-                    </td>
+          <>
+            {/* Mobile View Customer Cards */}
+            <div className="grid grid-cols-1 gap-3 md:hidden">
+              {filteredCustomers.map((c) => (
+                <div
+                  key={c.phone}
+                  className="bg-slate-50/90 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs hover:border-emerald-300 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base leading-tight">
+                        {c.name}
+                      </h4>
+                      <p className="text-xs text-slate-600 font-bold mt-0.5">
+                        {c.team_name}
+                      </p>
+                    </div>
+
+                    <a
+                      href={`tel:${c.phone}`}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-xs flex items-center space-x-1 transition-colors shrink-0"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>{c.phone}</span>
+                    </a>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/70 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="font-semibold text-slate-500">Total Visits:</span>
+                      <span className="font-bold text-amber-700">{c.total_visits} Visits</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="font-semibold text-slate-500">Last Played:</span>
+                      <span className="font-semibold text-slate-900">{formatNiceDate(c.last_played)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-700">
+                      <span className="font-semibold text-slate-500">Avg Spend / Visit:</span>
+                      <span className="font-semibold text-slate-900">{formatINR(c.avg_spend_per_visit)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                      <span className="font-semibold text-slate-500">Lifetime Spend:</span>
+                      <span className="font-black text-emerald-700 text-sm">{formatINR(c.total_spent)}</span>
+                    </div>
+                    {c.outstanding_amount > 0 && (
+                      <div className="flex items-center justify-between pt-1 text-rose-600 font-black">
+                        <span>Outstanding Due:</span>
+                        <span>{formatINR(c.outstanding_amount)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-3 rounded-l-xl">Customer Name</th>
+                    <th className="p-3">Team / Phone</th>
+                    <th className="p-3">Total Visits</th>
+                    <th className="p-3">Last Played</th>
+                    <th className="p-3">Avg Spend</th>
+                    <th className="p-3 text-right">Lifetime Spend</th>
+                    <th className="p-3 text-right rounded-r-xl">Outstanding</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredCustomers.map((c) => (
+                    <tr key={c.phone} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 font-black text-slate-900 text-sm">{c.name}</td>
+                      <td className="p-3 text-slate-600">
+                        <div className="font-bold">{c.team_name}</div>
+                        <div className="text-[11px] text-slate-400">{c.phone}</div>
+                      </td>
+                      <td className="p-3 font-bold text-amber-700">{c.total_visits} Visits</td>
+                      <td className="p-3 text-slate-500">{formatNiceDate(c.last_played)}</td>
+                      <td className="p-3 text-slate-700">{formatINR(c.avg_spend_per_visit)}</td>
+                      <td className="p-3 text-right font-black text-emerald-700">
+                        {formatINR(c.total_spent)}
+                      </td>
+                      <td className="p-3 text-right">
+                        {c.outstanding_amount > 0 ? (
+                          <span className="font-black text-rose-600 text-sm">
+                            {formatINR(c.outstanding_amount)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">Clear</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

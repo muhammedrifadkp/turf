@@ -38,7 +38,7 @@ export default function LoginPage() {
             ⚽
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Turf Management System
+            Orion Turf Management System
           </h2>
           <p className="text-xs text-slate-500 font-medium">
             Enter your credentials to access owner & staff dashboard

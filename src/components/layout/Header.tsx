@@ -49,7 +49,6 @@ export default function Header() {
       { href: '/schedule', label: 'Schedule', icon: Calendar },
       { href: '/bookings', label: 'Bookings', icon: Clock },
       { href: '/drinks', label: 'Drinks', icon: Coffee },
-      { href: '/expenses', label: 'Expenses', icon: DollarSign },
       { href: '/customers', label: 'Customers', icon: Users },
       { href: '/monthly', label: 'Monthly Subs', icon: Zap },
     ];
@@ -70,93 +69,43 @@ export default function Header() {
       <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo & Facility Name */}
+            {/* Logo & Facility Name matching reference screenshot */}
             <div className="flex items-center space-x-3">
-              <Link href="/schedule" className="flex items-center space-x-2 group">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-md group-hover:scale-105 transition-transform">
+              <Link href="/schedule" className="flex items-center space-x-2.5 group">
+                <div className="w-9 h-9 rounded-full bg-[#00a878] flex items-center justify-center text-white font-black text-lg shadow-sm group-hover:scale-105 transition-transform">
                   ⚽
                 </div>
                 <div>
-                  <span className="font-extrabold text-lg tracking-tight text-slate-900 block leading-none">
+                  <span className="font-bold text-lg tracking-tight text-slate-900 block leading-none">
                     {settings.facility_name.split(' ')[0]}
-                    <span className="text-emerald-600">Turf</span>
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider block">
-                    Management SaaS
+                    <span className="text-[#00a878]">Turf</span>
                   </span>
                 </div>
               </Link>
             </div>
 
-            {/* Desktop Navigation Links */}
-            {user && pathname !== '/login' && (
-              <nav className="hidden lg:flex items-center space-x-1">
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = pathname === link.href;
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{link.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-
             {/* Right Status Actions & User Role Switcher */}
             {user && pathname !== '/login' && (
-              <div className="flex items-center space-x-2 sm:space-x-3">
-              {/* Supabase Live Realtime Status Badge */}
-              <button
-                suppressHydrationWarning
-                onClick={triggerManualSync}
-                title="Supabase Live Realtime Connection"
-                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
-                  syncStatus === 'synced'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : syncStatus === 'failed'
-                    ? 'bg-rose-50 border-rose-200 text-rose-700 animate-pulse'
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
-                }`}
-              >
-                {syncStatus === 'failed' ? (
-                  <WifiOff className="w-3.5 h-3.5 text-rose-600" />
+              <div className="flex items-center space-x-2">
+                {/* Shift Quick Status Button matching screenshot */}
+                {currentShift ? (
+                  <Link
+                    href="/shift"
+                    className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-[#00a878] hover:bg-[#009067] text-white font-extrabold text-xs shadow-2xs transition-all tracking-wide"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white stroke-none" />
+                    <span>ACTIVE SHIFT</span>
+                  </Link>
                 ) : (
-                  <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                  <button
+                    suppressHydrationWarning
+                    onClick={() => setShowStartShift(true)}
+                    className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-2xs transition-all tracking-wide"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>START SHIFT</span>
+                  </button>
                 )}
-                <span className="capitalize hidden sm:inline">
-                  {syncStatus === 'synced' ? 'Supabase Live' : syncStatus === 'syncing' ? 'Syncing...' : 'Disconnected'}
-                </span>
-              </button>
-
-              {/* Shift Quick Status Button */}
-              {currentShift ? (
-                <Link
-                  href="/shift"
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-sm transition-all"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>ACTIVE SHIFT</span>
-                </Link>
-              ) : (
-                <button
-                  suppressHydrationWarning
-                  onClick={() => setShowStartShift(true)}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-sm transition-all"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>START SHIFT</span>
-                </button>
-              )}
 
               {/* User / Role Dropdown Selector */}
               <div className="relative">
