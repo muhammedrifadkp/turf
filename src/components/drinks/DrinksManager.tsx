@@ -19,6 +19,52 @@ import {
 } from 'lucide-react';
 import AddExpenseModal from '@/components/expenses/AddExpenseModal';
 
+function getCourtBadge(b: any) {
+  const court = (b.court_type || b.booking_type || 'football').toLowerCase();
+
+  if (court === 'football') {
+    return {
+      icon: '⚽',
+      label: 'Football Turf',
+      badgeClass: 'bg-emerald-100 text-emerald-950 border-emerald-300',
+    };
+  }
+  if (court === 'badminton_1') {
+    return {
+      icon: '🏸',
+      label: 'Court 1 (Synthetic)',
+      badgeClass: 'bg-cyan-100 text-cyan-950 border-cyan-300',
+    };
+  }
+  if (court === 'badminton_2') {
+    return {
+      icon: '🏸',
+      label: 'Court 2 (Wooden)',
+      badgeClass: 'bg-purple-100 text-purple-950 border-purple-300',
+    };
+  }
+  if (court === 'both_badminton') {
+    return {
+      icon: '🏸',
+      label: 'Both Courts (1 & 2)',
+      badgeClass: 'bg-indigo-100 text-indigo-950 border-indigo-300',
+    };
+  }
+  if (court.includes('badminton')) {
+    return {
+      icon: '🏸',
+      label: 'Badminton',
+      badgeClass: 'bg-blue-100 text-blue-950 border-blue-300',
+    };
+  }
+
+  return {
+    icon: '⚽',
+    label: court.toUpperCase(),
+    badgeClass: 'bg-slate-100 text-slate-900 border-slate-300',
+  };
+}
+
 export default function DrinksManager() {
   const { drinkSales, currentShift, bookings } = useTurf();
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -162,54 +208,65 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="space-y-3">
-              {todayUnconfirmedPendingBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 transition-all hover:border-emerald-300"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        TEAM NAME
-                      </span>
-                      <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
-                        {b.team_name}
-                      </h4>
-                    </div>
-                    <div className="bg-[#fef08a] text-amber-950 font-bold px-3 py-1 rounded-full text-xs flex items-center space-x-1 shadow-2xs shrink-0">
-                      <Clock className="w-3.5 h-3.5 text-amber-800" />
-                      <span>
-                        {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-medium">
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>
-                      {b.customer_name} • ({b.phone})
-                    </span>
-                  </div>
-
-                  <hr className="border-t border-dashed border-slate-200 my-2" />
-
-                  <div className="flex items-center justify-between text-xs pt-0.5">
-                    <span className="font-semibold text-slate-400">Outstanding:</span>
-                    <span className="text-sm font-extrabold text-rose-600">
-                      Due Balance: {formatINR(b.outstanding_balance)}
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-3 px-4 rounded-2xl bg-[#00a878] hover:bg-[#009067] active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+              {todayUnconfirmedPendingBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 transition-all hover:border-emerald-300"
                   >
-                    <Receipt className="w-4 h-4" />
-                    <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)})</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ))}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="mb-1">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                          >
+                            <span>{courtInfo.icon}</span>
+                            <span>{courtInfo.label}</span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          TEAM NAME
+                        </span>
+                        <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
+                          {b.team_name}
+                        </h4>
+                      </div>
+                      <div className="bg-[#fef08a] text-amber-950 font-bold px-3 py-1 rounded-full text-xs flex items-center space-x-1 shadow-2xs shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-amber-800" />
+                        <span>
+                          {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-medium">
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        {b.customer_name} • ({b.phone})
+                      </span>
+                    </div>
+
+                    <hr className="border-t border-dashed border-slate-200 my-2" />
+
+                    <div className="flex items-center justify-between text-xs pt-0.5">
+                      <span className="font-semibold text-slate-400">Outstanding:</span>
+                      <span className="text-sm font-extrabold text-rose-600">
+                        Due Balance: {formatINR(b.outstanding_balance)}
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-3 px-4 rounded-2xl bg-[#00a878] hover:bg-[#009067] active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)})</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -234,51 +291,62 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="space-y-3">
-              {todayCompletedWithPendingBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 transition-all hover:border-amber-300"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
-                        TEAM NAME
-                      </span>
-                      <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
-                        {b.team_name}
-                      </h4>
-                    </div>
-                    <div className="bg-amber-200 text-amber-950 border border-amber-300 px-3 py-1 rounded-full text-xs font-extrabold flex items-center space-x-1 shrink-0">
-                      <span>⏳ PENDING FOR NEXT TIME</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-medium">
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>
-                      {b.customer_name} • ({b.phone})
-                    </span>
-                  </div>
-
-                  <hr className="border-t border-dashed border-amber-200 my-2" />
-
-                  <div className="flex items-center justify-between text-xs pt-0.5">
-                    <span className="font-bold text-slate-600">Pending Amount to Collect Next Time:</span>
-                    <span className="text-sm font-black text-amber-800">
-                      {formatINR(b.outstanding_balance)}
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+              {todayCompletedWithPendingBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 transition-all hover:border-amber-300"
                   >
-                    <Receipt className="w-4 h-4" />
-                    <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)})</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ))}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="mb-1">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                          >
+                            <span>{courtInfo.icon}</span>
+                            <span>{courtInfo.label}</span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
+                          TEAM NAME
+                        </span>
+                        <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
+                          {b.team_name}
+                        </h4>
+                      </div>
+                      <div className="bg-amber-200 text-amber-950 border border-amber-300 px-3 py-1 rounded-full text-xs font-extrabold flex items-center space-x-1 shrink-0">
+                        <span>⏳ PENDING FOR NEXT TIME</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-medium">
+                      <User className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        {b.customer_name} • ({b.phone})
+                      </span>
+                    </div>
+
+                    <hr className="border-t border-dashed border-amber-200 my-2" />
+
+                    <div className="flex items-center justify-between text-xs pt-0.5">
+                      <span className="font-bold text-slate-600">Pending Amount to Collect Next Time:</span>
+                      <span className="text-sm font-black text-amber-800">
+                        {formatINR(b.outstanding_balance)}
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)})</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -303,47 +371,58 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="space-y-3">
-              {todayFinishedBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        TEAM NAME
-                      </span>
-                      <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
-                        {b.team_name}
-                      </h4>
-                    </div>
-                    <div className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs font-extrabold flex items-center space-x-1 shrink-0">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>PAID IN FULL</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-1.5 text-slate-500 font-medium">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>
-                        {formatTimeDisplay(b.start_time)} ({b.total_hours}h)
-                      </span>
-                    </div>
-                    <div className="font-extrabold text-emerald-600 text-sm">
-                      Total: {formatINR(b.final_amount)}
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-3 px-4 rounded-2xl bg-[#18181b] hover:bg-slate-800 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+              {todayFinishedBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3"
                   >
-                    <span>OPEN POS DETAILS</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ))}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="mb-1">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                          >
+                            <span>{courtInfo.icon}</span>
+                            <span>{courtInfo.label}</span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          TEAM NAME
+                        </span>
+                        <h4 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight capitalize mt-0.5">
+                          {b.team_name}
+                        </h4>
+                      </div>
+                      <div className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs font-extrabold flex items-center space-x-1 shrink-0">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>PAID IN FULL</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center space-x-1.5 text-slate-500 font-medium">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>
+                          {formatTimeDisplay(b.start_time)} ({b.total_hours}h)
+                        </span>
+                      </div>
+                      <div className="font-extrabold text-emerald-600 text-sm">
+                        Total: {formatINR(b.final_amount)}
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-3 px-4 rounded-2xl bg-[#18181b] hover:bg-slate-800 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                    >
+                      <span>OPEN POS DETAILS</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -405,47 +484,58 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todayUnconfirmedPendingBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-slate-50/80 border border-slate-200 hover:border-emerald-300 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xs transition-all"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                          Team Name
-                        </span>
-                        <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
-                          {b.team_name}
-                        </h4>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs whitespace-nowrap">
-                        {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700 font-semibold mt-2 flex items-center gap-1.5">
-                      <span>👤 {b.customer_name}</span>
-                      <span className="text-slate-400">•</span>
-                      <span>({b.phone})</span>
-                    </p>
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-slate-500">Outstanding:</span>
-                      <span className="text-base font-black text-rose-700">
-                        Due Balance: {formatINR(b.outstanding_balance)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+              {todayUnconfirmedPendingBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-slate-50/80 border border-slate-200 hover:border-emerald-300 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xs transition-all"
                   >
-                    <DollarSign className="w-4 h-4" />
-                    <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)}) →</span>
-                  </Link>
-                </div>
-              ))}
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="mb-1">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                            >
+                              <span>{courtInfo.icon}</span>
+                              <span>{courtInfo.label}</span>
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                            Team Name
+                          </span>
+                          <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
+                            {b.team_name}
+                          </h4>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs whitespace-nowrap">
+                          {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700 font-semibold mt-2 flex items-center gap-1.5">
+                        <span>👤 {b.customer_name}</span>
+                        <span className="text-slate-400">•</span>
+                        <span>({b.phone})</span>
+                      </p>
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                        <span className="text-xs font-extrabold text-slate-500">Outstanding:</span>
+                        <span className="text-base font-black text-rose-700">
+                          Due Balance: {formatINR(b.outstanding_balance)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                      <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)}) →</span>
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -466,46 +556,57 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todayCompletedWithPendingBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-amber-50/70 border border-amber-200/90 hover:border-amber-400 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xs transition-all"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider block">
-                          Team Name
-                        </span>
-                        <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
-                          {b.team_name}
-                        </h4>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs whitespace-nowrap">
-                        ⏳ SAVED PENDING
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700 font-semibold mt-2 flex items-center gap-1.5">
-                      <span>👤 {b.customer_name}</span>
-                      <span className="text-slate-400">•</span>
-                      <span>({b.phone})</span>
-                    </p>
-                    <div className="mt-2 pt-2 border-t border-amber-200/80 flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-slate-600">Pending Dues for Next Time:</span>
-                      <span className="text-base font-black text-amber-800">
-                        {formatINR(b.outstanding_balance)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+              {todayCompletedWithPendingBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-amber-50/70 border border-amber-200/90 hover:border-amber-400 rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-2xs transition-all"
                   >
-                    <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)}) →</span>
-                  </Link>
-                </div>
-              ))}
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="mb-1">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                            >
+                              <span>{courtInfo.icon}</span>
+                              <span>{courtInfo.label}</span>
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider block">
+                            Team Name
+                          </span>
+                          <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
+                            {b.team_name}
+                          </h4>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs whitespace-nowrap">
+                          ⏳ SAVED PENDING
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700 font-semibold mt-2 flex items-center gap-1.5">
+                        <span>👤 {b.customer_name}</span>
+                        <span className="text-slate-400">•</span>
+                        <span>({b.phone})</span>
+                      </p>
+                      <div className="mt-2 pt-2 border-t border-amber-200/80 flex items-center justify-between">
+                        <span className="text-xs font-extrabold text-slate-600">Pending Dues for Next Time:</span>
+                        <span className="text-base font-black text-amber-800">
+                          {formatINR(b.outstanding_balance)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)}) →</span>
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -526,44 +627,55 @@ export default function DrinksManager() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todayFinishedBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-emerald-50/40 border border-emerald-200/80 rounded-2xl p-4 flex flex-col justify-between space-y-3"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                          Team Name
-                        </span>
-                        <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
-                          {b.team_name}
-                        </h4>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        ✓ PAID IN FULL
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700 font-semibold mt-2">
-                      👤 {b.customer_name} ({b.phone})
-                    </p>
-                    <p className="text-xs font-bold text-slate-600 mt-1">
-                      Timing: {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)} ({b.total_hours}h)
-                    </p>
-                    <p className="text-sm font-black text-emerald-700 mt-1.5">
-                      Total Paid: {formatINR(b.final_amount)}
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/bookings/${b.id}`}
-                    className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+              {todayFinishedBookings.map((b) => {
+                const courtInfo = getCourtBadge(b);
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-emerald-50/40 border border-emerald-200/80 rounded-2xl p-4 flex flex-col justify-between space-y-3"
                   >
-                    <span>OPEN POS DETAILS →</span>
-                  </Link>
-                </div>
-              ))}
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="mb-1">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-black border shadow-2xs ${courtInfo.badgeClass}`}
+                            >
+                              <span>{courtInfo.icon}</span>
+                              <span>{courtInfo.label}</span>
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                            Team Name
+                          </span>
+                          <h4 className="font-black text-slate-900 text-lg sm:text-xl leading-tight capitalize">
+                            {b.team_name}
+                          </h4>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          ✓ PAID IN FULL
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700 font-semibold mt-2">
+                        👤 {b.customer_name} ({b.phone})
+                      </p>
+                      <p className="text-xs font-bold text-slate-600 mt-1">
+                        Timing: {formatTimeDisplay(b.start_time)} - {formatTimeDisplay(b.end_time)} ({b.total_hours}h)
+                      </p>
+                      <p className="text-sm font-black text-emerald-700 mt-1.5">
+                        Total Paid: {formatINR(b.final_amount)}
+                      </p>
+                    </div>
+
+                    <Link
+                      href={`/bookings/${b.id}`}
+                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <span>OPEN POS DETAILS →</span>
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
