@@ -1638,6 +1638,26 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Prevent mouse wheel scrolling from changing values on any numeric input field globally
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl instanceof HTMLInputElement && activeEl.type === 'number') {
+        activeEl.blur();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('wheel', handleWheel, { passive: true });
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('wheel', handleWheel);
+      }
+    };
+  }, []);
+
   // Manual Trigger to re-fetch live production state from Supabase
   const triggerManualSync = async () => {
     await checkConnection();
