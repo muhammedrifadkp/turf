@@ -67,6 +67,17 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
     booking?.discount || 0
   );
 
+  // Pending Amount State (for teams that don't pay full amount today)
+  const initialPending =
+    booking?.pending_amount !== undefined
+      ? booking.pending_amount
+      : booking?.outstanding_balance !== undefined
+      ? booking.outstanding_balance
+      : 0;
+
+  const [pendingAmountInput, setPendingAmountInput] = useState<number | string>(initialPending);
+  const [isPendingManuallyEdited, setIsPendingManuallyEdited] = useState<boolean>(false);
+
   if (!booking) {
     return (
       <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center space-y-4 shadow-sm my-6 max-w-2xl mx-auto">
@@ -119,6 +130,13 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
   const totalUnpaidDuesToCollect = finalGroundPayable + unpaidDrinksRevenue;
   const liveOutstanding = Math.max(0, totalUnpaidDuesToCollect - totalPaymentsReceived);
 
+  // Auto-sync pending amount input with liveOutstanding if user hasn't manually overridden
+  React.useEffect(() => {
+    if (!isPendingManuallyEdited) {
+      setPendingAmountInput(liveOutstanding);
+    }
+  }, [liveOutstanding, isPendingManuallyEdited]);
+
   // Dynamic Payment Status
   const isFullyPaid = booking.status === 'paid' || liveOutstanding <= 0;
 
@@ -151,14 +169,46 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
   // Mark Booking Complete & Save POS Details
   const [saveSuccessMessage, setSaveSuccessMessage] = useState(false);
 
-  const handleCompleteBooking = () => {
+  const handleSavePendingOnly = () => {
     const numDisc = Number(discountValue) || 0;
-    const updatedStatus = liveOutstanding <= 0 ? 'paid' : totalPaymentsReceived > 0 ? 'advance_received' : 'pending';
+    const finalPending = Math.max(0, Number(pendingAmountInput) || 0);
+
+    const updatedStatus =
+      finalPending <= 0
+        ? 'paid'
+        : totalPaymentsReceived > 0
+        ? 'advance_received'
+        : 'pending';
 
     updateBooking(booking.id, {
       discount: numDisc,
       status: updatedStatus,
-      outstanding_balance: liveOutstanding,
+      outstanding_balance: finalPending,
+      pending_amount: finalPending,
+      is_pos_confirmed: true,
+    });
+
+    setSaveSuccessMessage(true);
+    setTimeout(() => setSaveSuccessMessage(false), 3500);
+  };
+
+  const handleCompleteBooking = () => {
+    const numDisc = Number(discountValue) || 0;
+    const finalPending = Math.max(0, Number(pendingAmountInput) || 0);
+
+    const updatedStatus =
+      finalPending <= 0
+        ? 'paid'
+        : totalPaymentsReceived > 0
+        ? 'advance_received'
+        : 'pending';
+
+    updateBooking(booking.id, {
+      discount: numDisc,
+      status: updatedStatus,
+      outstanding_balance: finalPending,
+      pending_amount: finalPending,
+      is_pos_confirmed: true,
     });
 
     setSaveSuccessMessage(true);
@@ -502,7 +552,67 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
           />
         </div>
 
-        {/* 5. Live Summary Card */}
+        {/* 5. Pending Amount Input (For Partial Payments / Next Time Collection) */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-100 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-[11px] font-extrabold text-slate-900 uppercase tracking-widest flex items-center gap-1.5">
+              <span>⏳</span>
+              <span>Pending Amount for Next Time (₹)</span>
+            </label>
+            {isPendingManuallyEdited && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingAmountInput(liveOutstanding);
+                  setIsPendingManuallyEdited(false);
+                }}
+                className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md cursor-pointer"
+              >
+                Reset (₹{liveOutstanding})
+              </button>
+            )}
+          </div>
+
+          <p className="text-[11px] text-slate-500 font-medium">
+            If team doesn't pay full amount today, set the pending amount to collect next time.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              value={pendingAmountInput}
+              onChange={(e) => {
+                setPendingAmountInput(e.target.value);
+                setIsPendingManuallyEdited(true);
+              }}
+              placeholder="0"
+              className="flex-1 min-w-[120px] bg-slate-50 border border-slate-200 text-slate-900 font-extrabold rounded-xl py-3 px-4 text-base focus:ring-2 focus:ring-[#00a67e] focus:border-[#00a67e] outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleSavePendingOnly}
+              className="px-3.5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-xs shrink-0 cursor-pointer shadow-xs transition-all flex items-center gap-1.5"
+              title="Save Pending Amount & Confirm POS"
+            >
+              <span>💾</span>
+              <span>Save Pending</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingAmountInput(0);
+                setIsPendingManuallyEdited(true);
+              }}
+              className="px-3 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-xs shrink-0 cursor-pointer border border-emerald-200"
+              title="Set to ₹0 (Paid Full)"
+            >
+              ₹0 (Paid Full)
+            </button>
+          </div>
+        </div>
+
+        {/* 6. Live Summary Card */}
         <section className="bg-white rounded-3xl p-6 border-2 border-slate-900 shadow-xl overflow-hidden relative space-y-4">
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Live Summary</h2>
 
@@ -536,13 +646,21 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
             </div>
           </div>
 
-          {/* Outstanding Dues Box */}
-          <div className={`rounded-2xl p-5 text-center ${liveOutstanding <= 0 ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-2 border-rose-100 text-rose-800'}`}>
+          {/* Outstanding / Pending Dues Box */}
+          <div
+            className={`rounded-2xl p-5 text-center transition-all ${
+              Number(pendingAmountInput) <= 0
+                ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-900'
+                : 'bg-amber-50 border-2 border-amber-200 text-amber-900'
+            }`}
+          >
             <p className="text-[10px] font-black uppercase tracking-widest mb-1">
-              {liveOutstanding <= 0 ? 'STATUS: PAID IN FULL' : 'REMAINING OUTSTANDING DUES'}
+              {Number(pendingAmountInput) <= 0
+                ? 'STATUS: PAID IN FULL'
+                : 'PENDING AMOUNT (TO BE COLLECTED NEXT TIME)'}
             </p>
             <p className="text-3.5xl font-black">
-              {liveOutstanding <= 0 ? '₹0' : formatINR(liveOutstanding)}
+              {Number(pendingAmountInput) <= 0 ? '₹0' : formatINR(Number(pendingAmountInput))}
             </p>
           </div>
 
@@ -939,7 +1057,66 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
           />
         </div>
 
-        {/* SECTION 4: LIVE SUMMARY CARD */}
+        {/* SECTION 4: PENDING AMOUNT (FOR PARTIAL PAYMENTS / NEXT TIME) */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-black text-slate-900 uppercase flex items-center space-x-1.5">
+              <span>⏳</span>
+              <span>Pending Amount for Next Time (₹)</span>
+            </label>
+            {isPendingManuallyEdited && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingAmountInput(liveOutstanding);
+                  setIsPendingManuallyEdited(false);
+                }}
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg cursor-pointer"
+              >
+                Reset to Calculated (₹{liveOutstanding})
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-500 font-medium">
+            If team doesn't pay full amount today, set the pending amount to collect next time.
+          </p>
+
+          <div className="flex items-center space-x-3">
+            <input
+              type="number"
+              min="0"
+              value={pendingAmountInput}
+              onChange={(e) => {
+                setPendingAmountInput(e.target.value);
+                setIsPendingManuallyEdited(true);
+              }}
+              placeholder="0"
+              className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 font-bold rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-600"
+            />
+            <button
+              type="button"
+              onClick={handleSavePendingOnly}
+              className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-xs cursor-pointer shadow-xs transition-all flex items-center space-x-1.5 shrink-0"
+              title="Save Pending Amount & Confirm POS"
+            >
+              <span>💾</span>
+              <span>SAVE PENDING</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingAmountInput(0);
+                setIsPendingManuallyEdited(true);
+              }}
+              className="px-4 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black text-xs cursor-pointer border border-emerald-200 shrink-0"
+            >
+              ₹0 (Paid Full)
+            </button>
+          </div>
+        </div>
+
+        {/* SECTION 5: LIVE SUMMARY CARD */}
         <div className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-xl space-y-4">
           <h3 className="text-base font-black text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-3">
             Live Summary
@@ -967,17 +1144,19 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
             </div>
 
             <div
-              className={`p-4 rounded-2xl text-center space-y-1 ${
-                liveOutstanding <= 0
+              className={`p-4 rounded-2xl text-center space-y-1 transition-all ${
+                Number(pendingAmountInput) <= 0
                   ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
-                  : 'bg-rose-50 text-rose-900 border border-rose-300'
+                  : 'bg-amber-50 text-amber-900 border border-amber-300'
               }`}
             >
               <span className="text-[10px] font-black uppercase tracking-wider block">
-                {liveOutstanding <= 0 ? 'STATUS: PAID IN FULL' : 'REMAINING OUTSTANDING DUES'}
+                {Number(pendingAmountInput) <= 0
+                  ? 'STATUS: PAID IN FULL'
+                  : 'PENDING AMOUNT (TO BE COLLECTED NEXT TIME)'}
               </span>
               <span className="text-2xl font-black block">
-                {liveOutstanding <= 0 ? '₹0' : formatINR(liveOutstanding)}
+                {Number(pendingAmountInput) <= 0 ? '₹0' : formatINR(Number(pendingAmountInput))}
               </span>
             </div>
           </div>

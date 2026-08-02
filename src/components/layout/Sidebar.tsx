@@ -21,6 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import StartShiftModal from '@/components/shift/StartShiftModal';
+import InstallAppButton from '@/components/pwa/InstallAppButton';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -67,20 +68,23 @@ export default function Sidebar() {
       <aside className="hidden lg:flex flex-col fixed top-0 bottom-0 left-0 w-64 bg-white border-r border-slate-200 shadow-sm z-40 text-slate-900 justify-between">
         {/* Top Section: Brand Logo & Navigation */}
         <div className="flex flex-col flex-1 overflow-y-auto p-4 space-y-5">
-          {/* Logo & Facility Header */}
-          <Link href={role === 'staff' ? '/drinks' : '/schedule'} className="flex items-center space-x-3 px-2 py-1 group">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-md group-hover:scale-105 transition-transform">
-              ⚽
-            </div>
-            <div className="overflow-hidden">
-              <span className="font-black text-base tracking-tight text-slate-900 block leading-tight truncate">
-                {settings.facility_name.split(' ')[0]} <span className="text-emerald-600">{settings.facility_name.split(' ')[1] || 'Turf'}</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">
-                {role === 'staff' ? 'Duty Staff Counter' : 'Owner Admin SaaS'}
-              </span>
-            </div>
-          </Link>
+          {/* Logo & Facility Header with PWA Install Icon */}
+          <div className="flex items-center justify-between">
+            <Link href={role === 'staff' ? '/drinks' : '/schedule'} className="flex items-center space-x-3 px-1 py-1 group overflow-hidden">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-md group-hover:scale-105 transition-transform flex-shrink-0">
+                ⚽
+              </div>
+              <div className="overflow-hidden">
+                <span className="font-black text-base tracking-tight text-slate-900 block leading-tight truncate">
+                  {settings.facility_name.split(' ')[0]} <span className="text-emerald-600">{settings.facility_name.split(' ')[1] || 'Turf'}</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block truncate">
+                  {role === 'staff' ? 'Duty Staff Counter' : 'Owner Admin SaaS'}
+                </span>
+              </div>
+            </Link>
+            <InstallAppButton variant="icon-only" />
+          </div>
 
           {/* Active Shift Widget */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">

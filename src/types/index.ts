@@ -55,6 +55,8 @@ export interface Booking {
   cash_paid: number;
   gpay_paid: number;
   outstanding_balance: number;
+  pending_amount?: number;
+  is_pos_confirmed?: boolean;
   payment_records?: PaymentRecord[];
   status: BookingStatus;
   cancellation_reason?: string;

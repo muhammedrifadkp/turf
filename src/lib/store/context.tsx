@@ -401,6 +401,8 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
                 advance_amount: advance,
                 final_amount: finalAmount,
                 outstanding_balance: outstanding,
+                pending_amount: sb.pending_amount !== undefined ? sb.pending_amount : lb.pending_amount !== undefined ? lb.pending_amount : outstanding,
+                is_pos_confirmed: Boolean(sb.is_pos_confirmed || lb.is_pos_confirmed),
                 status,
                 payment_records: mergedRecords,
                 updated_at: new Date().toISOString(),
@@ -1039,10 +1041,17 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
           const finalAmount = Math.max(0, merged.total_price - discount);
           const totalPaid =
             (merged.advance_amount || 0) + (merged.cash_paid || 0) + (merged.gpay_paid || 0);
-          const outstanding = Math.max(0, finalAmount - totalPaid);
+          const outstanding =
+            updates.outstanding_balance !== undefined
+              ? Number(updates.outstanding_balance)
+              : updates.pending_amount !== undefined
+              ? Number(updates.pending_amount)
+              : Math.max(0, finalAmount - totalPaid);
 
           merged.final_amount = finalAmount;
           merged.outstanding_balance = outstanding;
+          merged.pending_amount =
+            updates.pending_amount !== undefined ? Number(updates.pending_amount) : outstanding;
 
           if (merged.status !== 'cancelled' && merged.status !== 'monthly_subscriber') {
             if (outstanding <= 0 && finalAmount > 0) merged.status = 'paid';

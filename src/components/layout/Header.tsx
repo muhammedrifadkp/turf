@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import StartShiftModal from '@/components/shift/StartShiftModal';
+import InstallAppButton from '@/components/pwa/InstallAppButton';
 
 export default function Header() {
   const pathname = usePathname();
@@ -87,6 +88,9 @@ export default function Header() {
             {/* Right Status Actions & User Role Switcher */}
             {user && pathname !== '/login' && (
               <div className="flex items-center space-x-2">
+                {/* PWA Install Button (shows only for website/browser users) */}
+                <InstallAppButton variant="navbar" />
+
                 {/* Shift Quick Status Button matching screenshot */}
                 {currentShift ? (
                   <Link

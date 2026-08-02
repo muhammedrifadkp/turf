@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   cash_paid NUMERIC DEFAULT 0,
   gpay_paid NUMERIC DEFAULT 0,
   outstanding_balance NUMERIC DEFAULT 0,
+  pending_amount NUMERIC DEFAULT 0,
+  is_pos_confirmed BOOLEAN DEFAULT false,
   status TEXT NOT NULL CHECK (status IN ('paid', 'advance_received', 'pending', 'cancelled', 'monthly_subscriber')),
   notes TEXT,
   cancellation_reason TEXT,

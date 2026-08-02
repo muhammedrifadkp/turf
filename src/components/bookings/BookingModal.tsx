@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTurf } from '@/lib/store/context';
 import { usePopup } from '@/components/ui/ConfirmModal';
 import { Booking, BookingSource, BookingType, CourtType } from '@/types';
-import { calculateDurationHours, calculateHourlyRate, formatINR, getTodayDateString } from '@/lib/utils';
+import { calculateDurationHours, calculateHourlyRate, formatINR, getTodayDateString, parseTimeToMinutes } from '@/lib/utils';
 import { AlertTriangle, ChevronDown, ChevronUp, Clock, Edit3, Sparkles, X } from 'lucide-react';
 
 interface Props {
@@ -59,7 +59,7 @@ export default function BookingModal({
       setCourtType(bookingToEdit.court_type);
       setPlayDate(bookingToEdit.play_date);
       setStartTime(bookingToEdit.start_time);
-      setEndTime(bookingToEdit.end_time);
+      setEndTime(bookingToEdit.end_time === '24:00' ? '00:00' : bookingToEdit.end_time);
       setSource(bookingToEdit.source || 'walk_in');
       setReferenceId(bookingToEdit.reference_id || '');
       setDiscount(bookingToEdit.discount || 0);
@@ -82,7 +82,7 @@ export default function BookingModal({
       if (defaultCourt) setCourtType(defaultCourt);
       if (defaultDate) setPlayDate(defaultDate);
       if (defaultStartTime) setStartTime(defaultStartTime);
-      if (defaultEndTime) setEndTime(defaultEndTime);
+      if (defaultEndTime) setEndTime(defaultEndTime === '24:00' ? '00:00' : defaultEndTime);
       setRateType('auto');
     }
   }, [bookingToEdit, defaultCourt, defaultDate, defaultStartTime, defaultEndTime, settings]);
@@ -125,7 +125,7 @@ export default function BookingModal({
     const [start, end] = val.split('-');
     if (start && end) {
       setStartTime(start);
-      setEndTime(end);
+      setEndTime(end === '24:00' ? '00:00' : end);
       const startH = parseInt(start.split(':')[0], 10);
       const nightStart = settings.football_night_start_hour || 19;
       if (startH >= nightStart || startH < 6) {
@@ -148,17 +148,26 @@ export default function BookingModal({
 
   // Conflict Detection (ignore current booking if editing)
   const hasConflict = useMemo(() => {
-    return bookings.some(
-      (b) =>
-        b.id !== bookingToEdit?.id &&
-        b.play_date === playDate &&
-        b.court_type === courtType &&
-        !b.is_deleted &&
-        b.status !== 'cancelled' &&
-        ((startTime >= b.start_time && startTime < b.end_time) ||
-          (endTime > b.start_time && endTime <= b.end_time) ||
-          (startTime <= b.start_time && endTime >= b.end_time))
-    );
+    const newStart = parseTimeToMinutes(startTime);
+    let newEnd = parseTimeToMinutes(endTime);
+    if (newEnd <= newStart && newEnd === 0) newEnd = 1440;
+
+    return bookings.some((b) => {
+      if (
+        b.id === bookingToEdit?.id ||
+        b.play_date !== playDate ||
+        b.court_type !== courtType ||
+        b.is_deleted ||
+        b.status === 'cancelled'
+      ) {
+        return false;
+      }
+      const bStart = parseTimeToMinutes(b.start_time);
+      let bEnd = parseTimeToMinutes(b.end_time);
+      if (bEnd <= bStart && bEnd === 0) bEnd = 1440;
+
+      return newStart < bEnd && newEnd > bStart;
+    });
   }, [bookings, playDate, courtType, startTime, endTime, bookingToEdit]);
 
   if (!isOpen) return null;

@@ -2,6 +2,14 @@
 
 import { useEffect } from 'react';
 
+// Capture beforeinstallprompt early if it fires before React mounts
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    (window as unknown as { deferredPwaPrompt?: Event }).deferredPwaPrompt = e;
+  });
+}
+
 export default function ServiceWorkerRegister() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {

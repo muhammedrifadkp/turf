@@ -84,7 +84,9 @@ export default function VisualSchedule() {
   // Active bookings for selected date & court (Desktop view)
   const activeBookings = useMemo(() => {
     return bookings.filter((b) => {
-      const matchDate = b.play_date === selectedDate;
+      const matchDate =
+        b.play_date === selectedDate ||
+        Boolean(b.play_date && b.play_date.startsWith(selectedDate));
       const matchCourt = b.court_type === selectedCourt;
       const notDeleted = !b.is_deleted && b.status !== 'cancelled';
       const matchSearch =
@@ -142,20 +144,22 @@ export default function VisualSchedule() {
   // 24-Hour Slots Grid for Desktop & Mobile Full-Grid Views
   const allSlotsGrid = useMemo(() => {
     return TIME_SLOTS.map((time, idx) => {
-      const nextTime = TIME_SLOTS[idx + 1] || '24:00';
+      const nextTime = TIME_SLOTS[idx + 1] || '00:00';
       const hourNum = parseInt(time.split(':')[0], 10);
       const slotStartMins = parseTimeToMinutes(time);
-      const slotEndMins = parseTimeToMinutes(nextTime === '24:00' ? '24:00' : nextTime);
+      const slotEndMins = idx === 23 ? 1440 : parseTimeToMinutes(nextTime);
 
       const occupant =
         activeBookings.find((b) => {
           const bStart = parseTimeToMinutes(b.start_time);
-          const bEnd = parseTimeToMinutes(b.end_time);
+          let bEnd = parseTimeToMinutes(b.end_time);
+          if (bEnd <= bStart && bEnd === 0) bEnd = 1440;
           return bStart < slotEndMins && bEnd > slotStartMins;
         }) ||
         projectedMonthlySubs.find((s) => {
           const sStart = parseTimeToMinutes(s.start_time);
-          const sEnd = parseTimeToMinutes(s.end_time);
+          let sEnd = parseTimeToMinutes(s.end_time);
+          if (sEnd <= sStart && sEnd === 0) sEnd = 1440;
           return sStart < slotEndMins && sEnd > slotStartMins;
         });
 
@@ -287,7 +291,7 @@ export default function VisualSchedule() {
 
   const handleOpenWalkIn = (startTime: string, endTime: string) => {
     setSelectedBookingForEdit(null);
-    setPrefilledTimeSlot({ start: startTime, end: endTime });
+    setPrefilledTimeSlot({ start: startTime, end: endTime === '24:00' ? '00:00' : endTime });
     setIsBookingModalOpen(true);
   };
 

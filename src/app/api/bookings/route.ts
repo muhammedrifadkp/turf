@@ -54,6 +54,8 @@ export async function POST(req: Request) {
         cash_paid: Number(b.cash_paid) || 0,
         gpay_paid: Number(b.gpay_paid) || 0,
         outstanding_balance: Number(b.outstanding_balance) || 0,
+        pending_amount: Number(b.pending_amount) || 0,
+        is_pos_confirmed: Boolean(b.is_pos_confirmed),
         payment_records: Array.isArray(b.payment_records) ? b.payment_records : [],
         status: b.status || 'pending',
         notes: b.notes || null,

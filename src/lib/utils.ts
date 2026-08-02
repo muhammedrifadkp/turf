@@ -61,8 +61,9 @@ export function formatTimeDisplay(time24: string): string {
 
   if (isNaN(h)) return time24;
 
-  const period = h >= 12 ? 'PM' : 'AM';
-  const displayH = h % 12 === 0 ? 12 : h % 12;
+  const normH = h % 24;
+  const period = normH >= 12 ? 'PM' : 'AM';
+  const displayH = normH % 12 === 0 ? 12 : normH % 12;
   const displayM = String(isNaN(m) ? 0 : m).padStart(2, '0');
   return `${displayH}:${displayM} ${period}`;
 }
@@ -90,6 +91,11 @@ export function parseTimeToMinutes(timeStr: string): number {
 
 export function getTodayDateString(): string {
   const today = new Date();
+  // Operational business day changes at 6:00 AM (06:00)
+  // Between 12:00 AM (00:00) and 05:59 AM, treat as previous day's operational schedule
+  if (today.getHours() < 6) {
+    today.setDate(today.getDate() - 1);
+  }
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
