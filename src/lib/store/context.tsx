@@ -19,7 +19,7 @@ import {
   UserRole,
 } from '@/types';
 import { DEFAULT_SETTINGS, DRINK_ITEMS } from '@/lib/constants';
-import { calculateDurationHours, calculateHourlyRate, generateUUID, getTodayDateString } from '@/lib/utils';
+import { calculateDurationHours, calculateHourlyRate, generateUUID, getTodayDateString, normalizeBookingPaymentRecords } from '@/lib/utils';
 import {
   generateJWTToken,
   getAuthToken,
@@ -404,7 +404,14 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
                 pending_amount: sb.pending_amount !== undefined ? sb.pending_amount : lb.pending_amount !== undefined ? lb.pending_amount : outstanding,
                 is_pos_confirmed: Boolean(sb.is_pos_confirmed || lb.is_pos_confirmed),
                 status,
-                payment_records: mergedRecords,
+                payment_records: normalizeBookingPaymentRecords({
+                  ...sb,
+                  ...lb,
+                  advance_amount: advance,
+                  cash_paid: maxCash,
+                  gpay_paid: maxGpay,
+                  payment_records: mergedRecords,
+                }),
                 updated_at: new Date().toISOString(),
               };
             });
@@ -982,7 +989,7 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
 
     const activeShiftId = currentShift ? currentShift.id : undefined;
 
-    const newBooking: Booking = {
+    let newBooking: Booking = {
       ...bookingData,
       id: generateUUID(),
       shift_id: activeShiftId,
@@ -1002,6 +1009,8 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    newBooking.payment_records = normalizeBookingPaymentRecords(newBooking);
 
     setBookings((prev) => [newBooking, ...prev]);
 
@@ -1058,6 +1067,8 @@ export function TurfProvider({ children }: { children: React.ReactNode }) {
             else if (merged.advance_amount > 0 && outstanding > 0) merged.status = 'advance_received';
             else if (outstanding > 0) merged.status = 'pending';
           }
+
+          merged.payment_records = normalizeBookingPaymentRecords(merged);
 
           targetUpdated = merged;
           return merged;

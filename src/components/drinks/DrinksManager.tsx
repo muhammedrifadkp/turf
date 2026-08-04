@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useTurf } from '@/lib/store/context';
-import { formatINR, formatTimeDisplay, getTodayDateString, parseTimeToMinutes } from '@/lib/utils';
+import { formatINR, formatNiceDate, formatTimeDisplay, getTodayDateString, parseTimeToMinutes } from '@/lib/utils';
 import {
   ArrowRight,
   Banknote,
   Calculator,
+  Calendar,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   DollarSign,
   GlassWater,
@@ -72,44 +75,57 @@ export default function DrinksManager() {
   // Today's Date
   const todayDate = getTodayDateString();
 
+  // Selected Date state (persisted in localStorage)
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedDate = localStorage.getItem('staff_counter_selected_date');
+      if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
+        return savedDate;
+      }
+    }
+    return todayDate;
+  });
+
+  // Save selected date to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && selectedDate) {
+      localStorage.setItem('staff_counter_selected_date', selectedDate);
+    }
+  }, [selectedDate]);
+
+  // Date Navigation Handlers
+  const handlePrevDay = () => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    const newY = dateObj.getFullYear();
+    const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const newD = String(dateObj.getDate()).padStart(2, '0');
+    setSelectedDate(`${newY}-${newM}-${newD}`);
+  };
+
+  const handleNextDay = () => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    const newY = dateObj.getFullYear();
+    const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const newD = String(dateObj.getDate()).padStart(2, '0');
+    setSelectedDate(`${newY}-${newM}-${newD}`);
+  };
+
   // Smart Bookings Filter for Duty Staff Counter:
-  // 1. Matches current active shift (currentShift?.id && b.shift_id === currentShift.id)
-  // 2. Matches today's play_date (b.play_date.startsWith(todayDate))
-  // 3. Fallback: If no bookings for today (e.g. past midnight), show bookings from active shift or latest play_date
+  // Shows ONLY booking details matching the selected date
   const relevantBookings = useMemo(() => {
-    const valid = bookings.filter((b) => !b.is_deleted && b.status !== 'cancelled');
-    if (valid.length === 0) return [];
-
-    // Filter by current active shift or today's date
-    const todayOrShift = valid.filter((b) => {
-      const isCurrentShift = Boolean(currentShift?.id && b.shift_id === currentShift.id);
-      const isToday = Boolean(
-        b.play_date && (b.play_date === todayDate || b.play_date.startsWith(todayDate))
-      );
-      return isCurrentShift || isToday;
+    return bookings.filter((b) => {
+      if (b.is_deleted || b.status === 'cancelled') return false;
+      if (!b.play_date) return false;
+      const playDateStr = b.play_date.split('T')[0].split(' ')[0];
+      return playDateStr === selectedDate || b.play_date.startsWith(selectedDate);
     });
+  }, [bookings, selectedDate]);
 
-    if (todayOrShift.length > 0) {
-      return todayOrShift;
-    }
-
-    // Fallback if past midnight or date format difference: get latest play_date
-    const latestDate = valid.reduce((max, b) => {
-      const d = b.play_date ? b.play_date.split('T')[0].split(' ')[0] : '';
-      return d > max ? d : max;
-    }, '');
-
-    if (latestDate) {
-      return valid.filter((b) => {
-        const playDateStr = b.play_date ? b.play_date.split('T')[0].split(' ')[0] : '';
-        return playDateStr === latestDate || (currentShift?.id && b.shift_id === currentShift.id);
-      });
-    }
-
-    return valid;
-  }, [bookings, todayDate, currentShift?.id]);
-
-  // 1. Today's Unconfirmed Pending Dues Teams (Initial Dues)
+  // 1. Unconfirmed Pending Dues Teams (Initial Dues)
   const todayUnconfirmedPendingBookings = useMemo(() => {
     return relevantBookings
       .filter((b) => {
@@ -133,7 +149,7 @@ export default function DrinksManager() {
       .sort((a, b) => parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time));
   }, [relevantBookings]);
 
-  // 3. Today's Finished / Fully Paid Bookings
+  // 3. Finished / Fully Paid Bookings
   const todayFinishedBookings = useMemo(() => {
     return relevantBookings
       .filter((b) => b.outstanding_balance <= 0)
@@ -190,12 +206,66 @@ export default function DrinksManager() {
           </div>
         </div>
 
-        {/* SECTION 1: Today's Pending Dues Section */}
+        {/* Mobile Date Selector Bar */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handlePrevDay}
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition-all cursor-pointer"
+            title="Previous Day"
+          >
+            <ChevronLeft className="h-4 w-4 stroke-[2.5]" />
+          </button>
+
+          <div className="relative flex items-center justify-center gap-2 cursor-pointer py-1 px-2 rounded-xl hover:bg-slate-50 transition-colors">
+            <Calendar className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="font-extrabold text-xs sm:text-sm text-slate-900">
+              {formatNiceDate(selectedDate)}
+            </span>
+            {selectedDate === todayDate && (
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wide">
+                TODAY
+              </span>
+            )}
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {selectedDate !== todayDate && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayDate)}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-[11px] font-black transition-all cursor-pointer"
+              >
+                Today
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleNextDay}
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition-all cursor-pointer"
+              title="Next Day"
+            >
+              <ChevronRight className="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+        </div>
+
+        {/* SECTION 1: Pending Dues Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center space-x-2">
               <Banknote className="w-5 h-5 text-emerald-600" />
-              <span>Today's Pending Dues Teams</span>
+              <span>
+                {selectedDate === todayDate
+                  ? "Today's Pending Dues Teams"
+                  : `Pending Dues Teams (${formatNiceDate(selectedDate)})`}
+              </span>
             </h3>
             <span className="text-xs font-semibold text-slate-400">
               {todayUnconfirmedPendingBookings.length} Pending
@@ -204,7 +274,9 @@ export default function DrinksManager() {
 
           {todayUnconfirmedPendingBookings.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-3xl p-6 text-center text-slate-400 text-xs font-medium shadow-xs">
-              🎉 All initial pending teams have been processed or paid!
+              {selectedDate === todayDate
+                ? '🎉 All initial pending teams have been processed or paid!'
+                : `No initial pending teams for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="space-y-3">
@@ -271,7 +343,7 @@ export default function DrinksManager() {
           )}
         </div>
 
-        {/* SECTION 2 (NEW! BETWEEN SECTION 1 & 3): Completed Bookings with Pending Dues */}
+        {/* SECTION 2: Completed Bookings with Pending Dues */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-base sm:text-lg font-bold text-amber-900 flex items-center space-x-2">
@@ -287,7 +359,9 @@ export default function DrinksManager() {
 
           {todayCompletedWithPendingBookings.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-3xl p-6 text-center text-slate-400 text-xs font-medium shadow-xs">
-              No completed bookings with pending dues saved for next time yet.
+              {selectedDate === todayDate
+                ? 'No completed bookings with pending dues saved for next time yet.'
+                : `No completed bookings with pending dues saved for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="space-y-3">
@@ -358,7 +432,11 @@ export default function DrinksManager() {
               <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               </div>
-              <span>Finished / Paid Bookings</span>
+              <span>
+                {selectedDate === todayDate
+                  ? 'Finished / Paid Bookings'
+                  : `Finished / Paid Bookings (${formatNiceDate(selectedDate)})`}
+              </span>
             </h3>
             <span className="text-xs font-semibold text-slate-400">
               {todayFinishedBookings.length} Completed
@@ -367,7 +445,9 @@ export default function DrinksManager() {
 
           {todayFinishedBookings.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-3xl p-6 text-center text-slate-400 text-xs font-medium shadow-xs">
-              No completed/paid bookings for today yet.
+              {selectedDate === todayDate
+                ? 'No completed/paid bookings for today yet.'
+                : `No completed/paid bookings for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="space-y-3">
@@ -433,9 +513,9 @@ export default function DrinksManager() {
       {/* ========================================== */}
       <div className="hidden lg:block space-y-6 pb-20">
         {/* Top Header Banner */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-2xl font-black">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-2xl font-black shrink-0">
               🥤
             </div>
             <div>
@@ -444,6 +524,55 @@ export default function DrinksManager() {
                 Collect team dues & manage shift cash accounting
               </p>
             </div>
+          </div>
+
+          {/* Desktop Date Selector Control */}
+          <div className="flex items-center bg-slate-50 border border-slate-200/90 rounded-2xl p-2 shadow-2xs space-x-2">
+            <button
+              type="button"
+              onClick={handlePrevDay}
+              className="p-2 rounded-xl bg-white hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 transition-all cursor-pointer"
+              title="Previous Day"
+            >
+              <ChevronLeft className="h-4 w-4 stroke-[2.5]" />
+            </button>
+
+            <div className="relative flex items-center justify-center space-x-2 px-3 py-1 cursor-pointer">
+              <Calendar className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="font-extrabold text-sm text-slate-900 whitespace-nowrap">
+                {formatNiceDate(selectedDate)}
+              </span>
+              {selectedDate === todayDate && (
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wide">
+                  TODAY
+                </span>
+              )}
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            {selectedDate !== todayDate && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayDate)}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 text-xs font-black transition-all cursor-pointer"
+              >
+                Today
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleNextDay}
+              className="p-2 rounded-xl bg-white hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 transition-all cursor-pointer"
+              title="Next Day"
+            >
+              <ChevronRight className="h-4 w-4 stroke-[2.5]" />
+            </button>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -473,14 +602,20 @@ export default function DrinksManager() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-base font-black text-slate-900 flex items-center space-x-2">
               <DollarSign className="w-5 h-5 text-emerald-600" />
-              <span>Today's Pending Dues Teams ({todayUnconfirmedPendingBookings.length} Pending Dues)</span>
+              <span>
+                {selectedDate === todayDate
+                  ? `Today's Pending Dues Teams (${todayUnconfirmedPendingBookings.length} Pending Dues)`
+                  : `Pending Dues Teams (${formatNiceDate(selectedDate)}) (${todayUnconfirmedPendingBookings.length} Pending Dues)`}
+              </span>
             </h3>
             <span className="text-xs text-slate-500 font-medium">Page-Based Dues & Drinks</span>
           </div>
 
           {todayUnconfirmedPendingBookings.length === 0 ? (
             <div className="text-center py-6 text-slate-400 text-xs font-semibold">
-              🎉 All initial pending teams have been processed or paid!
+              {selectedDate === todayDate
+                ? '🎉 All initial pending teams have been processed or paid!'
+                : `No initial pending teams for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -540,7 +675,7 @@ export default function DrinksManager() {
           )}
         </div>
 
-        {/* SECTION 2 (NEW! BETWEEN SECTION 1 & 3): Completed Bookings with Pending Dues */}
+        {/* SECTION 2: Completed Bookings with Pending Dues */}
         <div className="bg-white border border-amber-200 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-amber-100 pb-3">
             <h3 className="text-base font-black text-amber-950 flex items-center space-x-2">
@@ -552,7 +687,9 @@ export default function DrinksManager() {
 
           {todayCompletedWithPendingBookings.length === 0 ? (
             <div className="text-center py-6 text-slate-400 text-xs font-semibold">
-              No completed bookings with pending dues saved for next time yet.
+              {selectedDate === todayDate
+                ? 'No completed bookings with pending dues saved for next time yet.'
+                : `No completed bookings with pending dues saved for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -611,19 +748,25 @@ export default function DrinksManager() {
           )}
         </div>
 
-        {/* SECTION 3: TODAY'S FINISHED / PAID BOOKINGS SECTION */}
+        {/* SECTION 3: FINISHED / PAID BOOKINGS SECTION */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-base font-black text-slate-900 flex items-center space-x-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Today's Finished / Paid Bookings ({todayFinishedBookings.length} Completed)</span>
+              <span>
+                {selectedDate === todayDate
+                  ? `Today's Finished / Paid Bookings (${todayFinishedBookings.length} Completed)`
+                  : `Finished / Paid Bookings (${formatNiceDate(selectedDate)}) (${todayFinishedBookings.length} Completed)`}
+              </span>
             </h3>
             <span className="text-xs text-slate-500 font-medium">Fully Paid Dues</span>
           </div>
 
           {todayFinishedBookings.length === 0 ? (
             <div className="text-center py-6 text-slate-400 text-xs">
-              No completed/paid bookings for today yet.
+              {selectedDate === todayDate
+                ? 'No completed/paid bookings for today yet.'
+                : `No completed/paid bookings for ${formatNiceDate(selectedDate)}.`}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

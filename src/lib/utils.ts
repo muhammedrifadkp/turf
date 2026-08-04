@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { CourtType, Settings } from '@/types';
+import { CourtType, PaymentRecord, Settings } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -126,5 +126,99 @@ export function generateUUID(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+export function normalizeBookingPaymentRecords(booking: any): PaymentRecord[] {
+  if (!booking) return [];
+
+  const existingRecords: PaymentRecord[] = Array.isArray(booking.payment_records)
+    ? [...booking.payment_records]
+    : [];
+
+  const createdDate = booking.created_at || booking.booking_date || new Date().toISOString();
+
+  // Helper to identify advance records
+  const isAdvRecord = (r: any) =>
+    Boolean(r.is_advance) || Boolean(r.note && r.note.toLowerCase().includes('advance'));
+
+  // 1. Ensure Advance Paid Record Exists if advance_amount > 0
+  const advanceAmt = Number(booking.advance_amount) || 0;
+  if (advanceAmt > 0) {
+    const hasAdvanceRecord = existingRecords.some(isAdvRecord);
+    if (!hasAdvanceRecord) {
+      const advMethod = (booking.advance_method || 'gpay').toLowerCase() as 'cash' | 'gpay';
+      existingRecords.unshift({
+        id: `adv-${booking.id}`,
+        booking_id: booking.id,
+        amount: advanceAmt,
+        payment_method: advMethod === 'cash' ? 'cash' : 'gpay',
+        staff_id: booking.created_by_user_id || 'system',
+        staff_name: booking.created_by_name || 'System',
+        created_at: createdDate,
+        note: `Advance (${advMethod.toUpperCase()})`,
+        is_advance: true,
+      });
+    }
+  }
+
+  // 2. Ensure Non-Advance Cash Paid is fully accounted for
+  let targetCash = Number(booking.cash_paid) || 0;
+  let targetGpay = Number(booking.gpay_paid) || 0;
+
+  // IF booking is marked status === 'paid' or outstanding_balance === 0,
+  // but total explicit payments (advance + cash + gpay) is less than final_amount,
+  // infer the remaining balance as Cash Payment!
+  const finalGroundAmount = Math.max(
+    0,
+    (Number(booking.final_amount) || Number(booking.total_price) || 0) - (Number(booking.discount) || 0)
+  );
+  const isPaidStatus =
+    booking.status === 'paid' ||
+    (booking.outstanding_balance !== undefined && Number(booking.outstanding_balance) <= 0);
+
+  const totalExplicitPayments = advanceAmt + targetCash + targetGpay;
+  if (isPaidStatus && finalGroundAmount > totalExplicitPayments) {
+    const unrecordedBalance = finalGroundAmount - totalExplicitPayments;
+    targetCash += unrecordedBalance;
+  }
+
+  const recordedCash = existingRecords
+    .filter((r) => r.payment_method === 'cash' && !isAdvRecord(r))
+    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+  if (targetCash > recordedCash) {
+    const missingCash = targetCash - recordedCash;
+    existingRecords.push({
+      id: `cash-sys-${booking.id}`,
+      booking_id: booking.id,
+      amount: missingCash,
+      payment_method: 'cash',
+      staff_id: booking.created_by_user_id || 'staff',
+      staff_name: booking.created_by_name || 'Staff',
+      created_at: createdDate,
+      note: 'Cash Payment',
+    });
+  }
+
+  // 3. Ensure Non-Advance GPay Paid is fully accounted for
+  const recordedGpay = existingRecords
+    .filter((r) => r.payment_method === 'gpay' && !isAdvRecord(r))
+    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+  if (targetGpay > recordedGpay) {
+    const missingGpay = targetGpay - recordedGpay;
+    existingRecords.push({
+      id: `gpay-sys-${booking.id}`,
+      booking_id: booking.id,
+      amount: missingGpay,
+      payment_method: 'gpay',
+      staff_id: booking.created_by_user_id || 'staff',
+      staff_name: booking.created_by_name || 'Staff',
+      created_at: createdDate,
+      note: 'GPay Payment',
+    });
+  }
+
+  return existingRecords;
 }
 

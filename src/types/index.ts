@@ -29,6 +29,8 @@ export interface PaymentRecord {
   staff_id: string;
   staff_name: string;
   created_at: string;
+  note?: string;
+  is_advance?: boolean;
 }
 
 export interface Booking {

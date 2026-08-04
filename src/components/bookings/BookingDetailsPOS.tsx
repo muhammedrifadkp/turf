@@ -7,7 +7,7 @@ import { useTurf } from '@/lib/store/context';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { Booking, DrinkType, PaymentRecord } from '@/types';
 import { DRINK_ITEMS } from '@/lib/constants';
-import { formatINR, formatNiceDate, formatTimeDisplay } from '@/lib/utils';
+import { formatINR, formatNiceDate, formatTimeDisplay, normalizeBookingPaymentRecords } from '@/lib/utils';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -110,14 +110,27 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
     .filter((d) => !d.is_paid)
     .reduce((acc, d) => acc + d.total_price, 0);
 
-  // Payment Timeline Records
-  const paymentRecords: PaymentRecord[] = booking.payment_records || [];
+  // Payment Timeline Records (Normalized to include any cash/gpay/advance payments)
+  const paymentRecords: PaymentRecord[] = useMemo(
+    () => normalizeBookingPaymentRecords(booking),
+    [booking]
+  );
 
-  // Total Payments Calculation
-  const totalAdvancePaid = booking.advance_amount || 0;
-  const totalCashPaid = booking.cash_paid || 0;
-  const totalGpayPaid = booking.gpay_paid || 0;
-  const totalPaymentsReceived = totalAdvancePaid + totalCashPaid + totalGpayPaid;
+  // Total Payments Calculation from Normalized Payment Records
+  const totalAdvancePaid =
+    paymentRecords
+      .filter((r) => r.is_advance || (r.note && r.note.toLowerCase().includes('advance')))
+      .reduce((sum, r) => sum + r.amount, 0) || (booking.advance_amount || 0);
+
+  const totalCashPaid = paymentRecords
+    .filter((r) => r.payment_method === 'cash' && !r.is_advance && (!r.note || !r.note.toLowerCase().includes('advance')))
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const totalGpayPaid = paymentRecords
+    .filter((r) => r.payment_method === 'gpay' && !r.is_advance && (!r.note || !r.note.toLowerCase().includes('advance')))
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const totalPaymentsReceived = paymentRecords.reduce((sum, r) => sum + r.amount, 0);
 
   // Financial Live Totals
   const groundCharge = booking.total_price;
@@ -399,9 +412,9 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
                 <div className="flex items-center gap-2">
                   <span className="text-base">{pay.payment_method === 'cash' ? '💵' : '📱'}</span>
                   <div>
-                    <p className="text-slate-800 font-bold">
-                      {pay.payment_method === 'cash' ? 'Cash' : 'GPay'}{' '}
-                      <span className="text-[10px] text-slate-400 font-normal ml-1">
+                    <p className="text-slate-800 font-bold flex items-center gap-1.5">
+                      <span>{pay.note || (pay.payment_method === 'cash' ? 'Cash Payment' : 'GPay Payment')}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">
                         ({new Date(pay.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
                       </span>
                     </p>
