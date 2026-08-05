@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import BookingModal from '@/components/bookings/BookingModal';
 import PaymentModal from '@/components/bookings/PaymentModal';
+import { WhatsAppShareButton } from '@/components/ui/WhatsAppShareButton';
 
 export default function VisualSchedule() {
   const confirm = useConfirm();
@@ -427,12 +428,15 @@ export default function VisualSchedule() {
           </div>
 
           {occupant.status !== 'monthly_subscriber' && (
-            <Link
-              href={`/bookings/${occupant.id}`}
-              className="px-2.5 py-1 rounded-lg bg-[#00a67e] hover:bg-emerald-700 text-white font-extrabold text-[10px] uppercase shadow-xs transition-all flex items-center space-x-1 shrink-0"
-            >
-              <span>POS DETAILS →</span>
-            </Link>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Link
+                href={`/bookings/${occupant.id}`}
+                className="px-2.5 py-1 rounded-lg bg-[#00a67e] hover:bg-emerald-700 text-white font-extrabold text-[10px] uppercase shadow-xs transition-all flex items-center space-x-1"
+              >
+                <span>POS DETAILS →</span>
+              </Link>
+              <WhatsAppShareButton booking={occupant} variant="icon" className="p-1 rounded-lg" />
+            </div>
           )}
         </div>
       </div>
@@ -526,6 +530,8 @@ export default function VisualSchedule() {
                   >
                     <span>Manage POS Details →</span>
                   </Link>
+
+                  <WhatsAppShareButton booking={occupant} variant="icon" className="py-1.5 px-2 rounded-xl" />
 
                   <button
                     suppressHydrationWarning
@@ -632,6 +638,8 @@ export default function VisualSchedule() {
             <span>POS DETAILS</span>
             <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
           </Link>
+
+          <WhatsAppShareButton booking={b} variant="icon" className="w-10 h-10 rounded-xl" />
 
           <button
             type="button"

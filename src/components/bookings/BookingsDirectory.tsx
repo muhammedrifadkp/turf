@@ -20,8 +20,9 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
-import BookingModal from './BookingModal';
-import PaymentModal from './PaymentModal';
+import BookingModal from '@/components/bookings/BookingModal';
+import PaymentModal from '@/components/bookings/PaymentModal';
+import { WhatsAppShareButton } from '@/components/ui/WhatsAppShareButton';
 
 export default function BookingsDirectory() {
   const confirm = useConfirm();
@@ -269,6 +270,8 @@ export default function BookingsDirectory() {
                       <span>POS Details →</span>
                     </Link>
 
+                    <WhatsAppShareButton booking={b} variant="icon" className="p-2.5 rounded-xl" />
+
                     <button
                       onClick={() => {
                         setSelectedBookingForEdit(b);
@@ -364,6 +367,8 @@ export default function BookingsDirectory() {
                           >
                             <span>POS Page →</span>
                           </Link>
+
+                          <WhatsAppShareButton booking={b} variant="icon" className="p-1 rounded-lg" />
 
                           {/* Edit Button */}
                           <button

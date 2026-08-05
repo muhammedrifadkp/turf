@@ -24,6 +24,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { WhatsAppShareButton } from '@/components/ui/WhatsAppShareButton';
 
 interface Props {
   bookingId: string;
@@ -250,25 +251,29 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
 
         {/* 1. Customer Overview Card */}
         <section className="bg-white rounded-2xl p-5 shadow-xs border border-slate-100 space-y-4">
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 capitalize mb-1">
-              {booking.team_name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
-              {booking.phone && (
-                <a href={`tel:${booking.phone}`} className="flex items-center gap-1 text-slate-600 hover:text-[#00a67e]">
-                  <Phone className="h-4 w-4 text-[#00a67e]" />
-                  <span>{booking.phone}</span>
-                </a>
-              )}
-              <span>•</span>
-              <span className="flex items-center gap-1 font-bold text-[#00a67e]">
-                <span>⏰</span>
-                <span>
-                  {formatTimeDisplay(booking.start_time)} - {formatTimeDisplay(booking.end_time)} ({booking.total_hours}h)
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 capitalize mb-1">
+                {booking.team_name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
+                {booking.phone && (
+                  <a href={`tel:${booking.phone}`} className="flex items-center gap-1 text-slate-600 hover:text-[#00a67e]">
+                    <Phone className="h-4 w-4 text-[#00a67e]" />
+                    <span>{booking.phone}</span>
+                  </a>
+                )}
+                <span>•</span>
+                <span className="flex items-center gap-1 font-bold text-[#00a67e]">
+                  <span>⏰</span>
+                  <span>
+                    {formatTimeDisplay(booking.start_time)} - {formatTimeDisplay(booking.end_time)} ({booking.total_hours}h)
+                  </span>
                 </span>
-              </span>
+              </div>
             </div>
+
+            <WhatsAppShareButton booking={booking} variant="compact" label="Send WA" />
           </div>
 
           {/* Advance Paid Alert Pill */}
@@ -734,8 +739,8 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
               </p>
             </div>
 
-            {/* Status Badge */}
-            <div>
+            {/* Status Badge & WhatsApp Share Button */}
+            <div className="flex items-center space-x-3">
               {isFullyPaid ? (
                 <span className="px-4 py-1.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center space-x-1.5 shadow-xs">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -752,6 +757,8 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
                   <span>PENDING</span>
                 </span>
               )}
+
+              <WhatsAppShareButton booking={booking} label="Share on WhatsApp" />
             </div>
           </div>
 

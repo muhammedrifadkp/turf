@@ -15,12 +15,15 @@ import {
   ChevronRight,
   Clock,
   DollarSign,
+  Download,
   GlassWater,
   Plus,
   Receipt,
   User,
 } from 'lucide-react';
 import AddExpenseModal from '@/components/expenses/AddExpenseModal';
+import { WhatsAppShareButton } from '@/components/ui/WhatsAppShareButton';
+import { exportStaffDrinksReportPDF } from '@/lib/pdfExporter';
 
 function getCourtBadge(b: any) {
   const court = (b.court_type || b.booking_type || 'football').toLowerCase();
@@ -69,16 +72,18 @@ function getCourtBadge(b: any) {
 }
 
 export default function DrinksManager() {
-  const { drinkSales, currentShift, bookings } = useTurf();
+  const { drinkSales, currentShift, bookings, user } = useTurf();
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
   // Today's Date
   const todayDate = getTodayDateString();
 
-  // Selected Date state (persisted in localStorage)
+  const SHARED_DATE_KEY = 'staff_counter_selected_date';
+
+  // Selected Date state (persisted in shared localStorage)
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const savedDate = localStorage.getItem('staff_counter_selected_date');
+      const savedDate = localStorage.getItem(SHARED_DATE_KEY);
       if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
         return savedDate;
       }
@@ -86,12 +91,33 @@ export default function DrinksManager() {
     return todayDate;
   });
 
-  // Save selected date to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined' && selectedDate) {
-      localStorage.setItem('staff_counter_selected_date', selectedDate);
+  // Update selected date state, update localStorage, and notify other sections
+  const updateSelectedDate = (newDate: string) => {
+    setSelectedDate(newDate);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SHARED_DATE_KEY, newDate);
+      window.dispatchEvent(new Event('staff_counter_date_changed'));
     }
-  }, [selectedDate]);
+  };
+
+  // Sync state if date is changed from another tab or component
+  useEffect(() => {
+    const handleSync = () => {
+      if (typeof window !== 'undefined') {
+        const savedDate = localStorage.getItem(SHARED_DATE_KEY);
+        if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
+          setSelectedDate(savedDate);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('staff_counter_date_changed', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('staff_counter_date_changed', handleSync);
+    };
+  }, []);
 
   // Date Navigation Handlers
   const handlePrevDay = () => {
@@ -101,7 +127,7 @@ export default function DrinksManager() {
     const newY = dateObj.getFullYear();
     const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
     const newD = String(dateObj.getDate()).padStart(2, '0');
-    setSelectedDate(`${newY}-${newM}-${newD}`);
+    updateSelectedDate(`${newY}-${newM}-${newD}`);
   };
 
   const handleNextDay = () => {
@@ -111,7 +137,7 @@ export default function DrinksManager() {
     const newY = dateObj.getFullYear();
     const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
     const newD = String(dateObj.getDate()).padStart(2, '0');
-    setSelectedDate(`${newY}-${newM}-${newD}`);
+    updateSelectedDate(`${newY}-${newM}-${newD}`);
   };
 
   // Smart Bookings Filter for Duty Staff Counter:
@@ -163,6 +189,19 @@ export default function DrinksManager() {
 
   const totalDrinkRevenueThisShift = shiftDrinks.reduce((acc, d) => acc + d.total_price, 0);
 
+  // PDF Export Handler
+  const handleExportPDF = () => {
+    exportStaffDrinksReportPDF({
+      selectedDate,
+      unconfirmedPending: todayUnconfirmedPendingBookings,
+      completedWithPending: todayCompletedWithPendingBookings,
+      finishedBookings: todayFinishedBookings,
+      drinkSales,
+      currentShift,
+      staffName: user?.full_name || 'Duty Staff',
+    });
+  };
+
   return (
     <>
       {/* ========================================== */}
@@ -185,17 +224,26 @@ export default function DrinksManager() {
             </div>
           </div>
 
-          {/* Buttons Row: Crimson Add Expense + Shift Revenue Badge */}
-          <div className="grid grid-cols-2 sm:flex items-center gap-3 pt-1">
+          {/* Buttons Row: Crimson Add Expense + Export PDF + Shift Revenue Badge */}
+          <div className="grid grid-cols-2 sm:flex items-center gap-2.5 pt-1">
             <button
               onClick={() => setIsExpenseModalOpen(true)}
-              className="flex-1 py-3 px-4 rounded-2xl bg-[#be123c] hover:bg-[#9f1239] active:scale-[0.98] text-white font-bold text-xs sm:text-sm tracking-wide shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              className="py-3 px-3 rounded-2xl bg-[#be123c] hover:bg-[#9f1239] active:scale-[0.98] text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>ADD EXPENSE</span>
             </button>
 
-            <div className="bg-slate-100/80 border border-slate-200/70 rounded-2xl p-2.5 px-4 flex flex-col items-center justify-center text-center min-w-[120px]">
+            <button
+              onClick={handleExportPDF}
+              className="py-3 px-3 rounded-2xl bg-teal-700 hover:bg-teal-800 active:scale-[0.98] text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+              title="Export staff report as PDF for admin"
+            >
+              <Download className="w-4 h-4 stroke-[2.5]" />
+              <span>EXPORT PDF</span>
+            </button>
+
+            <div className="col-span-2 sm:col-span-1 bg-slate-100/80 border border-slate-200/70 rounded-2xl p-2.5 px-4 flex flex-col items-center justify-center text-center min-w-[110px]">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
                 SHIFT REVENUE
               </span>
@@ -230,7 +278,7 @@ export default function DrinksManager() {
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+              onChange={(e) => e.target.value && updateSelectedDate(e.target.value)}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             />
           </div>
@@ -239,7 +287,7 @@ export default function DrinksManager() {
             {selectedDate !== todayDate && (
               <button
                 type="button"
-                onClick={() => setSelectedDate(todayDate)}
+                onClick={() => updateSelectedDate(todayDate)}
                 className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-[11px] font-black transition-all cursor-pointer"
               >
                 Today
@@ -328,14 +376,17 @@ export default function DrinksManager() {
                       </span>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-3 px-4 rounded-2xl bg-[#00a878] hover:bg-[#009067] active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)})</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-3 px-4 rounded-2xl bg-[#00a878] hover:bg-[#009067] active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                      >
+                        <Receipt className="w-4 h-4" />
+                        <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)})</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-3.5 px-3.5 rounded-2xl" />
+                    </div>
                   </div>
                 );
               })}
@@ -410,14 +461,17 @@ export default function DrinksManager() {
                       </span>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)})</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                      >
+                        <Receipt className="w-4 h-4" />
+                        <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)})</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-3.5 px-3.5 rounded-2xl" />
+                    </div>
                   </div>
                 );
               })}
@@ -493,13 +547,16 @@ export default function DrinksManager() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-3 px-4 rounded-2xl bg-[#18181b] hover:bg-slate-800 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
-                    >
-                      <span>OPEN POS DETAILS</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-3 px-4 rounded-2xl bg-[#18181b] hover:bg-slate-800 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-sm transition-all flex items-center justify-center space-x-2"
+                      >
+                        <span>OPEN POS DETAILS</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-3.5 px-3.5 rounded-2xl" />
+                    </div>
                   </div>
                 );
               })}
@@ -550,7 +607,7 @@ export default function DrinksManager() {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                onChange={(e) => e.target.value && updateSelectedDate(e.target.value)}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </div>
@@ -558,7 +615,7 @@ export default function DrinksManager() {
             {selectedDate !== todayDate && (
               <button
                 type="button"
-                onClick={() => setSelectedDate(todayDate)}
+                onClick={() => updateSelectedDate(todayDate)}
                 className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 text-xs font-black transition-all cursor-pointer"
               >
                 Today
@@ -576,6 +633,15 @@ export default function DrinksManager() {
           </div>
 
           <div className="flex items-center space-x-3">
+            <button
+              onClick={handleExportPDF}
+              className="px-4 py-2.5 rounded-2xl bg-teal-700 hover:bg-teal-800 active:scale-95 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
+              title="Export staff report as PDF for admin"
+            >
+              <Download className="w-4 h-4 stroke-[2.5]" />
+              <span>EXPORT PDF</span>
+            </button>
+
             <button
               onClick={() => setIsExpenseModalOpen(true)}
               className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
@@ -661,13 +727,16 @@ export default function DrinksManager() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                      <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)}) →</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        <span>OPEN BOOKING POS PAGE ({formatINR(b.outstanding_balance)}) →</span>
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-2.5 px-3 rounded-xl" />
+                    </div>
                   </div>
                 );
               })}
@@ -735,12 +804,15 @@ export default function DrinksManager() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
-                    >
-                      <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)}) →</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                      >
+                        <span>OPEN POS / COLLECT PENDING ({formatINR(b.outstanding_balance)}) →</span>
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-2.5 px-3 rounded-xl" />
+                    </div>
                   </div>
                 );
               })}
@@ -810,12 +882,15 @@ export default function DrinksManager() {
                       </p>
                     </div>
 
-                    <Link
-                      href={`/bookings/${b.id}`}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
-                    >
-                      <span>OPEN POS DETAILS →</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wide shadow-xs transition-all flex items-center justify-center space-x-1.5"
+                      >
+                        <span>OPEN POS DETAILS →</span>
+                      </Link>
+                      <WhatsAppShareButton booking={b} variant="icon" className="py-2.5 px-3 rounded-xl" />
+                    </div>
                   </div>
                 );
               })}

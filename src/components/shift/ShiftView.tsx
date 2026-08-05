@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTurf } from '@/lib/store/context';
 import { useConfirm } from '@/components/ui/ConfirmModal';
 import { Shift, ShiftSummary } from '@/types';
-import { formatINR } from '@/lib/utils';
+import { formatINR, formatNiceDate, getTodayDateString } from '@/lib/utils';
 import {
   BarChart3,
+  Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   CreditCard,
   DollarSign,
@@ -44,6 +47,71 @@ export default function ShiftView() {
   const [isClosing, setIsClosing] = useState(false);
   const [lastClosedSummary, setLastClosedSummary] = useState<ShiftSummary | null>(null);
 
+  // Today's Date
+  const todayDate = getTodayDateString();
+
+  const SHARED_DATE_KEY = 'staff_counter_selected_date';
+
+  // Selected Date state (persisted in shared localStorage)
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedDate = localStorage.getItem(SHARED_DATE_KEY);
+      if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
+        return savedDate;
+      }
+    }
+    return todayDate;
+  });
+
+  // Update selected date state, update localStorage, and notify other sections
+  const updateSelectedDate = (newDate: string) => {
+    setSelectedDate(newDate);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SHARED_DATE_KEY, newDate);
+      window.dispatchEvent(new Event('staff_counter_date_changed'));
+    }
+  };
+
+  // Sync state if date is changed from another tab or component
+  useEffect(() => {
+    const handleSync = () => {
+      if (typeof window !== 'undefined') {
+        const savedDate = localStorage.getItem(SHARED_DATE_KEY);
+        if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
+          setSelectedDate(savedDate);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('staff_counter_date_changed', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('staff_counter_date_changed', handleSync);
+    };
+  }, []);
+
+  // Date Navigation Handlers
+  const handlePrevDay = () => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    const newY = dateObj.getFullYear();
+    const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const newD = String(dateObj.getDate()).padStart(2, '0');
+    updateSelectedDate(`${newY}-${newM}-${newD}`);
+  };
+
+  const handleNextDay = () => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    const newY = dateObj.getFullYear();
+    const newM = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const newD = String(dateObj.getDate()).padStart(2, '0');
+    updateSelectedDate(`${newY}-${newM}-${newD}`);
+  };
+
   const handleCloseShift = async () => {
     if (!currentShift) return;
 
@@ -71,65 +139,95 @@ export default function ShiftView() {
     }
   };
 
-  // Active shift live totals
-  const shiftBookings = currentShift
-    ? bookings.filter((b) => b.shift_id === currentShift.id && !b.is_deleted)
-    : [];
-  const shiftDrinks = currentShift
-    ? drinkSales.filter((d) => d.shift_id === currentShift.id && !d.is_deleted)
-    : [];
-  const shiftExpensesList = currentShift
-    ? expenses.filter((e) => e.shift_id === currentShift.id && !e.is_deleted)
-    : [];
+  // Selected Date Bookings, Drinks, and Expenses
+  const dateBookings = useMemo(() => {
+    return bookings.filter(
+      (b) => !b.is_deleted && (b.play_date === selectedDate || b.created_at?.startsWith(selectedDate))
+    );
+  }, [bookings, selectedDate]);
 
-  const liveFootballRev = shiftBookings
-    .filter((b) => b.court_type === 'football' && b.status !== 'cancelled')
-    .reduce((acc, b) => acc + b.final_amount, 0);
+  const dateDrinks = useMemo(() => {
+    return drinkSales.filter(
+      (d) => !d.is_deleted && ((d as any).sale_date === selectedDate || d.created_at?.startsWith(selectedDate))
+    );
+  }, [drinkSales, selectedDate]);
 
-  const liveBadmintonRev = shiftBookings
-    .filter((b) => b.court_type !== 'football' && b.status !== 'cancelled')
-    .reduce((acc, b) => acc + b.final_amount, 0);
+  const dateExpensesList = useMemo(() => {
+    return expenses.filter(
+      (e) => !e.is_deleted && ((e as any).expense_date === selectedDate || e.created_at?.startsWith(selectedDate))
+    );
+  }, [expenses, selectedDate]);
 
-  const liveDrinkRev = shiftDrinks.reduce((acc, d) => acc + d.total_price, 0);
-  const liveExpensesTotal = shiftExpensesList.reduce((acc, e) => acc + e.amount, 0);
-  const liveGross = liveFootballRev + liveBadmintonRev + liveDrinkRev;
+  // Financial Metrics for Selected Date
+  const liveFootballRev = useMemo(() => {
+    return dateBookings
+      .filter((b) => (b.court_type === 'football' || b.booking_type === 'football') && b.status !== 'cancelled')
+      .reduce((acc, b) => acc + (b.final_amount || b.total_price || 0), 0);
+  }, [dateBookings]);
 
-  // Calculate Cash & GPay breakdowns for Active Shift
-  const shiftCashBookings = shiftBookings.reduce((acc, b) => {
-    let bookingCash = b.cash_paid || 0;
-    if (b.advance_amount > 0 && (b.advance_method === 'cash' || !b.advance_method)) {
-      bookingCash += b.advance_amount;
-    }
-    return acc + bookingCash;
-  }, 0);
+  const liveBadmintonRev = useMemo(() => {
+    return dateBookings
+      .filter((b) => b.court_type !== 'football' && b.booking_type !== 'football' && b.status !== 'cancelled')
+      .reduce((acc, b) => acc + (b.final_amount || b.total_price || 0), 0);
+  }, [dateBookings]);
 
-  const shiftGpayBookings = shiftBookings.reduce((acc, b) => {
-    let bookingGpay = b.gpay_paid || 0;
-    if (b.advance_amount > 0 && b.advance_method === 'gpay') {
-      bookingGpay += b.advance_amount;
-    }
-    return acc + bookingGpay;
-  }, 0);
+  const liveDrinkRev = useMemo(() => {
+    return dateDrinks.reduce((acc, d) => acc + (d.total_price || 0), 0);
+  }, [dateDrinks]);
 
-  const shiftCashDrinks = shiftDrinks
-    .filter((d) => d.is_paid !== false && d.payment_method === 'cash')
-    .reduce((acc, d) => acc + d.total_price, 0);
+  const liveExpensesTotal = useMemo(() => {
+    return dateExpensesList.reduce((acc, e) => acc + (e.amount || 0), 0);
+  }, [dateExpensesList]);
 
-  const shiftGpayDrinks = shiftDrinks
-    .filter((d) => d.is_paid !== false && d.payment_method === 'gpay')
-    .reduce((acc, d) => acc + d.total_price, 0);
+  // Cash & GPay Breakdowns for Selected Date
+  const shiftCashBookings = useMemo(() => {
+    return dateBookings.reduce((acc, b) => {
+      let bookingCash = b.cash_paid || 0;
+      if (b.advance_amount > 0 && (b.advance_method === 'cash' || !b.advance_method)) {
+        bookingCash += b.advance_amount;
+      }
+      return acc + bookingCash;
+    }, 0);
+  }, [dateBookings]);
 
-  const shiftCashExpenses = shiftExpensesList
-    .filter((e) => !e.payment_method || e.payment_method === 'cash')
-    .reduce((acc, e) => acc + e.amount, 0);
+  const shiftGpayBookings = useMemo(() => {
+    return dateBookings.reduce((acc, b) => {
+      let bookingGpay = b.gpay_paid || 0;
+      if (b.advance_amount > 0 && b.advance_method === 'gpay') {
+        bookingGpay += b.advance_amount;
+      }
+      return acc + bookingGpay;
+    }, 0);
+  }, [dateBookings]);
 
-  const shiftGpayExpenses = shiftExpensesList
-    .filter((e) => e.payment_method === 'gpay')
-    .reduce((acc, e) => acc + e.amount, 0);
+  const shiftCashDrinks = useMemo(() => {
+    return dateDrinks
+      .filter((d) => d.is_paid !== false && d.payment_method === 'cash')
+      .reduce((acc, d) => acc + (d.total_price || 0), 0);
+  }, [dateDrinks]);
+
+  const shiftGpayDrinks = useMemo(() => {
+    return dateDrinks
+      .filter((d) => d.is_paid !== false && d.payment_method === 'gpay')
+      .reduce((acc, d) => acc + (d.total_price || 0), 0);
+  }, [dateDrinks]);
+
+  const shiftCashExpenses = useMemo(() => {
+    return dateExpensesList
+      .filter((e) => !e.payment_method || e.payment_method === 'cash')
+      .reduce((acc, e) => acc + (e.amount || 0), 0);
+  }, [dateExpensesList]);
+
+  const shiftGpayExpenses = useMemo(() => {
+    return dateExpensesList
+      .filter((e) => e.payment_method === 'gpay')
+      .reduce((acc, e) => acc + (e.amount || 0), 0);
+  }, [dateExpensesList]);
 
   const totalShiftCashRevenue = shiftCashBookings + shiftCashDrinks;
   const totalShiftGpayRevenue = shiftGpayBookings + shiftGpayDrinks;
-  const netCashInHand = (currentShift?.opening_cash || 0) + totalShiftCashRevenue - shiftCashExpenses;
+  const openingCashForDate = (currentShift && selectedDate === todayDate) ? (currentShift.opening_cash || 0) : 0;
+  const netCashInHand = openingCashForDate + totalShiftCashRevenue - shiftCashExpenses;
 
   return (
     <>
@@ -148,7 +246,7 @@ export default function ShiftView() {
                 Shift Accounting Engine
               </h1>
               <p className="text-xs text-[#3d4a43] font-medium leading-normal mt-0.5">
-                Shift-bound financial auditing & irreversible shift locking
+                Shift-bound financial auditing & date-based cash accounting
               </p>
             </div>
           </div>
@@ -172,8 +270,53 @@ export default function ShiftView() {
           )}
         </section>
 
+        {/* Date Selector Bar */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handlePrevDay}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition-all cursor-pointer"
+            title="Previous Day"
+          >
+            <ChevronLeft className="h-4 w-4 stroke-[2.5]" />
+          </button>
+
+          <div className="relative flex items-center justify-center flex-1">
+            <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-black text-slate-900 cursor-pointer hover:bg-slate-100 transition-all">
+              <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{formatNiceDate(selectedDate)}</span>
+            </div>
+
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => e.target.value && updateSelectedDate(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </div>
+
+          {selectedDate !== todayDate && (
+            <button
+              type="button"
+              onClick={() => updateSelectedDate(todayDate)}
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 text-xs font-black transition-all cursor-pointer shrink-0"
+            >
+              Today
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleNextDay}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition-all cursor-pointer"
+            title="Next Day"
+          >
+            <ChevronRight className="h-4 w-4 stroke-[2.5]" />
+          </button>
+        </div>
+
         {/* 2. Meta Data (Shift Started At & Opening Cash) */}
-        {currentShift && (
+        {currentShift && selectedDate === todayDate && (
           <section className="grid grid-cols-2 gap-3 px-1">
             <div className="flex flex-col">
               <span className="text-[11px] font-semibold text-[#3d4a43] uppercase tracking-wider">
@@ -202,87 +345,82 @@ export default function ShiftView() {
         )}
 
         {/* 3. Quick Stats Grid (4 Cards) */}
-        {currentShift && (
-          <section className="grid grid-cols-2 gap-3">
-            <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
-              <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
-                FOOTBALL REV
-              </span>
-              <span className="text-xl font-extrabold text-[#006c51]">
-                {formatINR(liveFootballRev)}
-              </span>
-            </div>
+        <section className="grid grid-cols-2 gap-3">
+          <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
+            <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
+              FOOTBALL REV
+            </span>
+            <span className="text-xl font-extrabold text-[#006c51]">
+              {formatINR(liveFootballRev)}
+            </span>
+          </div>
 
-            <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
-              <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
-                BADMINTON REV
-              </span>
-              <span className="text-xl font-extrabold text-[#1a1c1e]">
-                {formatINR(liveBadmintonRev)}
-              </span>
-            </div>
+          <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
+            <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
+              BADMINTON REV
+            </span>
+            <span className="text-xl font-extrabold text-[#1a1c1e]">
+              {formatINR(liveBadmintonRev)}
+            </span>
+          </div>
 
-            <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
-              <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
-                DRINK REV
-              </span>
-              <span className="text-xl font-extrabold text-[#c8a900]">
-                {formatINR(liveDrinkRev)}
-              </span>
-            </div>
+          <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
+            <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
+              DRINK REV
+            </span>
+            <span className="text-xl font-extrabold text-[#c8a900]">
+              {formatINR(liveDrinkRev)}
+            </span>
+          </div>
 
-            <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
-              <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
-                EXPENSES
-              </span>
-              <span className="text-xl font-extrabold text-[#b7102a]">
-                {formatINR(liveExpensesTotal)}
-              </span>
-            </div>
-          </section>
-        )}
+          <div className="bg-white border border-[#bccac2]/60 p-3.5 rounded-xl shadow-2xs">
+            <span className="text-[11px] font-bold text-[#3d4a43] uppercase block mb-0.5">
+              EXPENSES
+            </span>
+            <span className="text-xl font-extrabold text-[#b7102a]">
+              {formatINR(liveExpensesTotal)}
+            </span>
+          </div>
+        </section>
 
         {/* 4. Cash in Drawer Card (Counter) */}
-        {currentShift && (
-          <section className="bg-white border-2 border-[#00a67e] p-4 sm:p-5 rounded-xl relative overflow-hidden shadow-sm space-y-3">
-            <div className="flex justify-between items-start gap-2">
-              <div>
-                <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-[#003224]">
-                  <DollarSign className="w-4 h-4 text-[#006c51]" />
-                  <span>CASH IN DRAWER (COUNTER)</span>
-                </div>
-                <div className="text-3xl font-black text-[#006c51] mt-1 leading-tight">
-                  {formatINR(netCashInHand)}
-                </div>
+        <section className="bg-white border-2 border-[#00a67e] p-4 sm:p-5 rounded-xl relative overflow-hidden shadow-sm space-y-3">
+          <div className="flex justify-between items-start gap-2">
+            <div>
+              <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-[#003224]">
+                <DollarSign className="w-4 h-4 text-[#006c51]" />
+                <span>CASH IN DRAWER (COUNTER)</span>
               </div>
-              <button
-                onClick={() => alert(`Cash Handover to Owner: ${formatINR(netCashInHand)}`)}
-                className="bg-[#7af9cc] hover:opacity-90 active:scale-95 text-[#002116] font-bold text-xs px-3 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer shrink-0"
-              >
-                HANDOVER CASH
-              </button>
+              <div className="text-3xl font-black text-[#006c51] mt-1 leading-tight">
+                {formatINR(netCashInHand)}
+              </div>
             </div>
+            <button
+              onClick={() => alert(`Cash Handover to Owner: ${formatINR(netCashInHand)}`)}
+              className="bg-[#7af9cc] hover:opacity-90 active:scale-95 text-[#002116] font-bold text-xs px-3 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer shrink-0"
+            >
+              HANDOVER CASH
+            </button>
+          </div>
 
-            <div className="space-y-1.5 pt-2.5 border-t border-[#bccac2]/50 text-xs">
-              <div className="flex justify-between text-[#3d4a43]">
-                <span>Opening Cash:</span>
-                <span className="font-bold text-[#1a1c1e]">+{formatINR(currentShift.opening_cash)}</span>
-              </div>
-              <div className="flex justify-between text-[#3d4a43]">
-                <span>Cash Collections (Bookings + Drinks):</span>
-                <span className="font-bold text-[#006c51]">+{formatINR(totalShiftCashRevenue)}</span>
-              </div>
-              <div className="flex justify-between text-[#3d4a43]">
-                <span>Cash Expenses Paid Out:</span>
-                <span className="font-bold text-[#b7102a]">-{formatINR(shiftCashExpenses)}</span>
-              </div>
+          <div className="space-y-1.5 pt-2.5 border-t border-[#bccac2]/50 text-xs">
+            <div className="flex justify-between text-[#3d4a43]">
+              <span>Opening Cash:</span>
+              <span className="font-bold text-[#1a1c1e]">+{formatINR(openingCashForDate)}</span>
             </div>
-          </section>
-        )}
+            <div className="flex justify-between text-[#3d4a43]">
+              <span>Cash Collections (Bookings + Drinks):</span>
+              <span className="font-bold text-[#006c51]">+{formatINR(totalShiftCashRevenue)}</span>
+            </div>
+            <div className="flex justify-between text-[#3d4a43]">
+              <span>Cash Expenses Paid Out:</span>
+              <span className="font-bold text-[#b7102a]">-{formatINR(shiftCashExpenses)}</span>
+            </div>
+          </div>
+        </section>
 
         {/* 5. GPay / UPI Received Card */}
-        {currentShift && (
-          <section className="bg-white border-2 border-[#5bdcb0] p-4 sm:p-5 rounded-xl shadow-sm space-y-3">
+        <section className="bg-white border-2 border-[#5bdcb0] p-4 sm:p-5 rounded-xl shadow-sm space-y-3">
             <div className="flex justify-between items-start gap-2">
               <div>
                 <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-[#1a1c1e]">
@@ -313,11 +451,9 @@ export default function ShiftView() {
               </div>
             </div>
           </section>
-        )}
 
         {/* 6. Total Combined Shift Revenue Card */}
-        {currentShift && (
-          <section className="bg-[#1a1c1e] p-4 sm:p-5 rounded-xl text-white shadow-md space-y-3">
+        <section className="bg-[#1a1c1e] p-4 sm:p-5 rounded-xl text-white shadow-md space-y-3">
             <div className="flex justify-between items-start gap-2">
               <div>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-[#bccac2] uppercase tracking-wider">
@@ -345,7 +481,6 @@ export default function ShiftView() {
               </div>
             </div>
           </section>
-        )}
 
         {/* 7. Shift Closing & Audit Notes */}
         {currentShift ? (
@@ -498,9 +633,54 @@ export default function ShiftView() {
             <div>
               <h2 className="text-xl font-black text-slate-900">Shift Accounting Engine</h2>
               <p className="text-xs text-slate-500">
-                Shift-bound financial auditing & irreversible shift locking
+                Shift-bound financial auditing & date-based cash accounting
               </p>
             </div>
+          </div>
+
+          {/* Desktop Date Selector Controls */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
+            <button
+              type="button"
+              onClick={handlePrevDay}
+              className="p-2 rounded-xl bg-white hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 transition-all cursor-pointer"
+              title="Previous Day"
+            >
+              <ChevronLeft className="h-4 w-4 stroke-[2.5]" />
+            </button>
+
+            <div className="relative flex items-center justify-center">
+              <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-black text-slate-900 shadow-2xs cursor-pointer hover:bg-slate-50 transition-all">
+                <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{formatNiceDate(selectedDate)}</span>
+              </div>
+
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => e.target.value && updateSelectedDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            {selectedDate !== todayDate && (
+              <button
+                type="button"
+                onClick={() => updateSelectedDate(todayDate)}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 text-xs font-black transition-all cursor-pointer"
+              >
+                Today
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleNextDay}
+              className="p-2 rounded-xl bg-white hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 transition-all cursor-pointer"
+              title="Next Day"
+            >
+              <ChevronRight className="h-4 w-4 stroke-[2.5]" />
+            </button>
           </div>
 
           <div>
@@ -521,9 +701,9 @@ export default function ShiftView() {
           </div>
         </div>
 
-        {/* Active Shift Dashboard Panel */}
-        {currentShift ? (
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+        {/* Date Accounting Dashboard Panel */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+          {currentShift && selectedDate === todayDate && (
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
@@ -542,121 +722,123 @@ export default function ShiftView() {
                 </p>
               </div>
             </div>
+          )}
 
-            {/* Live Metrics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
-                  Football Rev
-                </span>
-                <span className="text-lg font-black text-emerald-700">
-                  {formatINR(liveFootballRev)}
-                </span>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
-                  Badminton Rev
-                </span>
-                <span className="text-lg font-black text-teal-700">
-                  {formatINR(liveBadmintonRev)}
-                </span>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
-                  Drink Rev
-                </span>
-                <span className="text-lg font-black text-amber-700">
-                  {formatINR(liveDrinkRev)}
-                </span>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
-                  Expenses
-                </span>
-                <span className="text-lg font-black text-rose-600">
-                  {formatINR(liveExpensesTotal)}
-                </span>
-              </div>
+          {/* Live Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
+                Football Rev
+              </span>
+              <span className="text-lg font-black text-emerald-700">
+                {formatINR(liveFootballRev)}
+              </span>
             </div>
 
-            {/* CASH & GPAY SEPARATED COUNTER AUDIT CARD */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 pt-5">
-              {/* CASH IN HAND / DRAWER */}
-              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-3xl p-5 shadow-sm space-y-2">
-                <div className="flex justify-between items-center text-emerald-900 font-extrabold text-xs uppercase tracking-wide">
-                  <span>💵 CASH IN DRAWER (COUNTER)</span>
-                  <span className="bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded-full text-[10px]">HANDOVER CASH</span>
-                </div>
-                <p className="text-3xl font-black text-emerald-800">
-                  {formatINR(netCashInHand)}
-                </p>
-                <div className="text-[11px] font-bold text-emerald-700 space-y-0.5 border-t border-emerald-200 pt-2">
-                  <div className="flex justify-between">
-                    <span>Opening Cash:</span>
-                    <span>+{formatINR(currentShift.opening_cash)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cash Collections (Bookings + Drinks):</span>
-                    <span>+{formatINR(totalShiftCashRevenue)}</span>
-                  </div>
-                  <div className="flex justify-between text-rose-700">
-                    <span>Cash Expenses Paid Out:</span>
-                    <span>-{formatINR(shiftCashExpenses)}</span>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
+                Badminton Rev
+              </span>
+              <span className="text-lg font-black text-teal-700">
+                {formatINR(liveBadmintonRev)}
+              </span>
+            </div>
 
-              {/* GPAY / UPI TOTAL */}
-              <div className="bg-teal-50 border-2 border-teal-300 rounded-3xl p-5 shadow-sm space-y-2">
-                <div className="flex justify-between items-center text-teal-900 font-extrabold text-xs uppercase tracking-wide">
-                  <span>📱 TOTAL GPAY / UPI RECEIVED</span>
-                  <span className="bg-teal-200 text-teal-900 px-2.5 py-0.5 rounded-full text-[10px]">BANK DIRECT</span>
-                </div>
-                <p className="text-3xl font-black text-teal-800">
-                  {formatINR(totalShiftGpayRevenue)}
-                </p>
-                <div className="text-[11px] font-bold text-teal-700 space-y-0.5 border-t border-teal-200 pt-2">
-                  <div className="flex justify-between">
-                    <span>GPay Bookings:</span>
-                    <span>{formatINR(shiftGpayBookings)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GPay Drinks:</span>
-                    <span>+{formatINR(shiftGpayDrinks)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>GPay Expenses:</span>
-                    <span>-{formatINR(shiftGpayExpenses)}</span>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
+                Drink Rev
+              </span>
+              <span className="text-lg font-black text-amber-700">
+                {formatINR(liveDrinkRev)}
+              </span>
+            </div>
 
-              {/* TOTAL SHIFT GROSS REVENUE */}
-              <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-sm space-y-2">
-                <div className="flex justify-between items-center font-extrabold text-xs uppercase tracking-wide text-slate-300">
-                  <span>📊 TOTAL COMBINED SHIFT REVENUE</span>
-                  <span className="bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-full text-[10px]">GROSS REVENUE</span>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="block text-[10px] font-extrabold text-slate-500 uppercase">
+                Expenses
+              </span>
+              <span className="text-lg font-black text-rose-600">
+                {formatINR(liveExpensesTotal)}
+              </span>
+            </div>
+          </div>
+
+          {/* CASH & GPAY SEPARATED COUNTER AUDIT CARD */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 pt-5">
+            {/* CASH IN HAND / DRAWER */}
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-3xl p-5 shadow-sm space-y-2">
+              <div className="flex justify-between items-center text-emerald-900 font-extrabold text-xs uppercase tracking-wide">
+                <span>💵 CASH IN DRAWER (COUNTER)</span>
+                <span className="bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded-full text-[10px]">HANDOVER CASH</span>
+              </div>
+              <p className="text-3xl font-black text-emerald-800">
+                {formatINR(netCashInHand)}
+              </p>
+              <div className="text-[11px] font-bold text-emerald-700 space-y-0.5 border-t border-emerald-200 pt-2">
+                <div className="flex justify-between">
+                  <span>Opening Cash:</span>
+                  <span>+{formatINR(openingCashForDate)}</span>
                 </div>
-                <p className="text-3xl font-black text-emerald-400">
-                  {formatINR(totalShiftCashRevenue + totalShiftGpayRevenue)}
-                </p>
-                <div className="text-[11px] font-bold text-slate-400 space-y-0.5 border-t border-slate-800 pt-2">
-                  <div className="flex justify-between">
-                    <span>Cash Portion:</span>
-                    <span className="text-emerald-400">{formatINR(totalShiftCashRevenue)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GPay Portion:</span>
-                    <span className="text-teal-400">{formatINR(totalShiftGpayRevenue)}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span>Cash Collections (Bookings + Drinks):</span>
+                  <span>+{formatINR(totalShiftCashRevenue)}</span>
+                </div>
+                <div className="flex justify-between text-rose-700">
+                  <span>Cash Expenses Paid Out:</span>
+                  <span>-{formatINR(shiftCashExpenses)}</span>
                 </div>
               </div>
             </div>
 
-            {/* End Shift Trigger Box */}
+            {/* GPAY / UPI TOTAL */}
+            <div className="bg-teal-50 border-2 border-teal-300 rounded-3xl p-5 shadow-sm space-y-2">
+              <div className="flex justify-between items-center text-teal-900 font-extrabold text-xs uppercase tracking-wide">
+                <span>📱 TOTAL GPAY / UPI RECEIVED</span>
+                <span className="bg-teal-200 text-teal-900 px-2.5 py-0.5 rounded-full text-[10px]">BANK DIRECT</span>
+              </div>
+              <p className="text-3xl font-black text-teal-800">
+                {formatINR(totalShiftGpayRevenue)}
+              </p>
+              <div className="text-[11px] font-bold text-teal-700 space-y-0.5 border-t border-teal-200 pt-2">
+                <div className="flex justify-between">
+                  <span>GPay Bookings:</span>
+                  <span>{formatINR(shiftGpayBookings)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GPay Drinks:</span>
+                  <span>+{formatINR(shiftGpayDrinks)}</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>GPay Expenses:</span>
+                  <span>-{formatINR(shiftGpayExpenses)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* TOTAL SHIFT GROSS REVENUE */}
+            <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-sm space-y-2">
+              <div className="flex justify-between items-center font-extrabold text-xs uppercase tracking-wide text-slate-300">
+                <span>📊 TOTAL COMBINED SHIFT REVENUE</span>
+                <span className="bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-full text-[10px]">GROSS REVENUE</span>
+              </div>
+              <p className="text-3xl font-black text-emerald-400">
+                {formatINR(totalShiftCashRevenue + totalShiftGpayRevenue)}
+              </p>
+              <div className="text-[11px] font-bold text-slate-400 space-y-0.5 border-t border-slate-800 pt-2">
+                <div className="flex justify-between">
+                  <span>Cash Portion:</span>
+                  <span className="text-emerald-400">{formatINR(totalShiftCashRevenue)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GPay Portion:</span>
+                  <span className="text-teal-400">{formatINR(totalShiftGpayRevenue)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* End Shift Trigger Box */}
+          {currentShift && selectedDate === todayDate && (
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
               <h4 className="text-sm font-black text-slate-900 flex items-center space-x-2">
                 <Lock className="w-4 h-4 text-amber-600" />
@@ -680,26 +862,8 @@ export default function ShiftView() {
                 <span>{isClosing ? 'Calculating & Locking Shift...' : 'END SHIFT & LOCK ACCOUNTING'}</span>
               </button>
             </div>
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-4 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl mx-auto text-amber-600">
-              ⏸️
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-slate-900">No Active Shift Currently</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                Staff must start a shift session before accepting walk-in bookings, payments or drink sales.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowStartModal(true)}
-              className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase shadow-sm transition-all cursor-pointer"
-            >
-              START SHIFT NOW
-            </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Recently Closed Shift Summary Report Banner */}
         {lastClosedSummary && (
