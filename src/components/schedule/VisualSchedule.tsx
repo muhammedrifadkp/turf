@@ -28,6 +28,7 @@ import {
   XCircle,
   Zap,
   ArrowRight,
+  Trash2,
 } from 'lucide-react';
 import BookingModal from '@/components/bookings/BookingModal';
 import PaymentModal from '@/components/bookings/PaymentModal';
@@ -38,6 +39,7 @@ export default function VisualSchedule() {
   const {
     bookings,
     updateBooking,
+    softDeleteBooking,
     monthlySubscriptions,
     currentShift,
     role,
@@ -319,6 +321,19 @@ export default function VisualSchedule() {
     }
   };
 
+  const handleDeleteBooking = async (b: Booking) => {
+    const confirmed = await confirm({
+      title: 'Delete Booking Record',
+      message: `Are you sure you want to delete the booking for "${b.team_name}" (${b.play_date})?`,
+      confirmText: 'Delete Record',
+      variant: 'danger',
+    });
+
+    if (confirmed) {
+      softDeleteBooking(b.id);
+    }
+  };
+
   const getStatusBadge = (status: Booking['status']) => {
     switch (status) {
       case 'paid':
@@ -436,6 +451,14 @@ export default function VisualSchedule() {
                 <span>POS DETAILS →</span>
               </Link>
               <WhatsAppShareButton booking={occupant} variant="icon" className="p-1 rounded-lg" />
+              <button
+                type="button"
+                onClick={() => handleDeleteBooking(occupant)}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                title="Delete Booking"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </div>
@@ -537,8 +560,18 @@ export default function VisualSchedule() {
                     suppressHydrationWarning
                     onClick={() => handleEditBooking(occupant)}
                     className="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                    title="Edit Booking"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    suppressHydrationWarning
+                    onClick={() => handleDeleteBooking(occupant)}
+                    className="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-600 font-extrabold text-xs border border-slate-200 transition-colors flex items-center space-x-1 cursor-pointer"
+                    title="Delete Booking"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
@@ -666,6 +699,15 @@ export default function VisualSchedule() {
             title="Cancel Booking"
           >
             <XCircle className="h-4 w-4 text-rose-500" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDeleteBooking(b)}
+            className="w-10 h-10 rounded-xl border border-slate-200 hover:bg-rose-600 hover:text-white text-slate-500 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            title="Delete Booking"
+          >
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </section>

@@ -117,6 +117,18 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
     [booking]
   );
 
+  // Filtered payment records for display in Payment Section (excludes advance payments)
+  const displayPaymentRecords = useMemo(
+    () =>
+      paymentRecords.filter(
+        (r) =>
+          !r.is_advance &&
+          !r.id.startsWith('adv-') &&
+          (!r.note || !r.note.toLowerCase().includes('advance'))
+      ),
+    [paymentRecords]
+  );
+
   // Total Payments Calculation from Normalized Payment Records
   const totalAdvancePaid =
     paymentRecords
@@ -409,58 +421,60 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
 
           {/* Payment Entries */}
           <div className="space-y-2">
-            {paymentRecords.map((pay) => (
-              <div
-                key={pay.id}
-                className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs font-bold"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{pay.payment_method === 'cash' ? '💵' : '📱'}</span>
-                  <div>
-                    <p className="text-slate-800 font-bold flex items-center gap-1.5">
-                      <span>{pay.note || (pay.payment_method === 'cash' ? 'Cash Payment' : 'GPay Payment')}</span>
-                      <span className="text-[10px] text-slate-400 font-normal">
-                        ({new Date(pay.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
-                      </span>
-                    </p>
+            {displayPaymentRecords.length > 0 ? (
+              displayPaymentRecords.map((pay, idx) => (
+                <div
+                  key={`${pay.id}-${idx}`}
+                  className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs font-bold"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{pay.payment_method === 'cash' ? '💵' : '📱'}</span>
+                    <div>
+                      <p className="text-slate-800 font-bold flex items-center gap-1.5">
+                        <span>{pay.note || (pay.payment_method === 'cash' ? 'Cash Payment' : 'GPay Payment')}</span>
+                        <span className="text-[10px] text-slate-400 font-normal">
+                          ({new Date(pay.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-[#00a67e] font-extrabold text-sm">{formatINR(pay.amount)}</span>
-                  <div className="flex gap-1.5 border-l border-slate-200 pl-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingRecordId(pay.id);
-                        setEditingAmount(String(pay.amount));
-                        setEditingMethod(pay.payment_method);
-                      }}
-                      className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const confirmed = await confirm({
-                          title: 'Remove Payment',
-                          message: `Are you sure you want to remove this ${pay.payment_method.toUpperCase()} payment of ${formatINR(pay.amount)}?`,
-                          confirmText: 'Remove',
-                          variant: 'danger',
-                        });
-                        if (confirmed) {
-                          removePaymentRecord(booking.id, pay.id);
-                        }
-                      }}
-                      className="p-1 text-slate-400 hover:text-red-500 cursor-pointer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#00a67e] font-extrabold text-sm">{formatINR(pay.amount)}</span>
+                    <div className="flex gap-1.5 border-l border-slate-200 pl-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRecordId(pay.id);
+                          setEditingAmount(String(pay.amount));
+                          setEditingMethod(pay.payment_method);
+                        }}
+                        className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: 'Remove Payment',
+                            message: `Are you sure you want to remove this ${pay.payment_method.toUpperCase()} payment of ${formatINR(pay.amount)}?`,
+                            confirmText: 'Remove',
+                            variant: 'danger',
+                          });
+                          if (confirmed) {
+                            removePaymentRecord(booking.id, pay.id);
+                          }
+                        }}
+                        className="p-1 text-slate-400 hover:text-red-500 cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : null}
           </div>
         </section>
 
@@ -907,17 +921,10 @@ export default function BookingDetailsPOS({ bookingId }: Props) {
 
           {/* PAYMENT ENTRIES TIMELINE */}
           <div className="space-y-2">
-            {booking.advance_amount > 0 && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs font-bold text-slate-800">
-                <span>Advance ({booking.advance_method?.toUpperCase() || 'CASH'})</span>
-                <span className="text-amber-700 font-black">{formatINR(booking.advance_amount)}</span>
-              </div>
-            )}
-
-            {paymentRecords.length > 0 ? (
-              paymentRecords.map((pay) => (
+            {displayPaymentRecords.length > 0 ? (
+              displayPaymentRecords.map((pay, idx) => (
                 <div
-                  key={pay.id}
+                  key={`${pay.id}-${idx}`}
                   className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs font-bold text-slate-800 animate-fade-in hover:bg-slate-100/70 transition-colors"
                 >
                   <div className="flex items-center space-x-2">

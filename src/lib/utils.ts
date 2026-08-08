@@ -219,6 +219,15 @@ export function normalizeBookingPaymentRecords(booking: any): PaymentRecord[] {
     });
   }
 
-  return existingRecords;
+  // Guarantee unique IDs across all records to prevent duplicate key warnings
+  const seenIds = new Set<string>();
+  return existingRecords.map((rec, index) => {
+    let finalId = rec.id || `rec-${index}`;
+    if (seenIds.has(finalId)) {
+      finalId = `${finalId}-${index}`;
+    }
+    seenIds.add(finalId);
+    return { ...rec, id: finalId };
+  });
 }
 
